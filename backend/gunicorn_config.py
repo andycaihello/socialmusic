@@ -1,11 +1,11 @@
-"""Gunicorn configuration file for production deployment"""
+"""Gunicorn configuration file for production deployment with WebSocket support"""
 
 # Server socket
 bind = "127.0.0.1:5000"
 
-# Worker processes
-workers = 4
-worker_class = "sync"
+# Worker processes - use gevent for WebSocket support
+workers = 1
+worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"
 worker_connections = 1000
 
 # Timeout
