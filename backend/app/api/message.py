@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_, and_, func
-from app.extensions import db
+from app.extensions import db, socketio
 from app.models.message import Message
 from app.models.social import Follow
 from app.models.user import User
@@ -50,42 +50,33 @@ def send_message():
     db.session.add(message)
     db.session.commit()
 
-    return jsonify(message.to_dict()), 201
+    # Emit WebSocket event to receiver
+    message_data = message.to_dict()
+    socketio.emit('new_message', message_data, room=f'user_{receiver_id}')
+
+    return jsonify(message_data), 201
 
 
 @bp.route('/messages/conversations', methods=['GET'])
 @jwt_required()
 def get_conversations():
     """Get conversation list with recent contacts"""
-    current_user_id = get_jwt_identity()
-
-    # Convert to int if it's a string
-    if isinstance(current_user_id, str):
-        current_user_id = int(current_user_id)
-
-    print(f"\n=== get_conversations DEBUG ===")
-    print(f"Current user ID: {current_user_id}, type: {type(current_user_id)}")
+    current_user_id = int(get_jwt_identity())
 
     # Get all messages involving current user
     messages = db.session.query(Message).filter(
         or_(Message.sender_id == current_user_id, Message.receiver_id == current_user_id)
     ).order_by(Message.created_at.desc()).all()
 
-    print(f"Total messages: {len(messages)}")
-
     # Group by conversation partner
     conversations_dict = {}
     for msg in messages:
         # Determine the other user
         other_user_id = msg.receiver_id if msg.sender_id == current_user_id else msg.sender_id
-        print(f"Message: sender={msg.sender_id}, receiver={msg.receiver_id}, other_user={other_user_id}")
 
         # Only keep the most recent message for each conversation
         if other_user_id not in conversations_dict:
             conversations_dict[other_user_id] = msg
-            print(f"  -> Added to conversations_dict")
-
-    print(f"Conversations dict keys: {list(conversations_dict.keys())}")
 
     # Build conversation list
     conversations = []
@@ -99,7 +90,6 @@ def get_conversations():
 
         # Get other user info
         other_user = db.session.query(User).get(other_user_id)
-        print(f"Other user ID: {other_user_id}, User object: {other_user.username if other_user else None}")
 
         if other_user:
             conversations.append({
@@ -114,9 +104,6 @@ def get_conversations():
 
     # Sort by last message time
     conversations.sort(key=lambda x: x['last_message']['created_at'], reverse=True)
-
-    print(f"Final conversations count: {len(conversations)}")
-    print("=== END DEBUG ===\n")
 
     return jsonify(conversations), 200
 

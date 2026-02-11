@@ -1,7 +1,7 @@
 /**
  * Main Layout component with header
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button, Avatar, Space, Typography, Badge } from 'antd';
@@ -9,6 +9,7 @@ import { UserOutlined, LogoutOutlined, MessageOutlined } from '@ant-design/icons
 import { logout } from '../store/authSlice';
 import { fetchUnreadCount } from '../store/messageSlice';
 import { getAvatarUrl } from '../utils/url';
+import io from 'socket.io-client';
 
 const { Header } = Layout;
 const { Title, Text } = Typography;
@@ -18,17 +19,36 @@ const MainLayout = ({ children }) => {
   const { unreadCount } = useSelector((state) => state.message);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
   useEffect(() => {
     // Fetch unread count initially
     dispatch(fetchUnreadCount());
 
-    // Poll for unread count every 30 seconds
-    const interval = setInterval(() => {
-      dispatch(fetchUnreadCount());
-    }, 30000);
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
 
-    return () => clearInterval(interval);
+    // Connect to WebSocket for real-time updates
+    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('MainLayout WebSocket connected');
+    });
+
+    socket.on('new_message', (message) => {
+      console.log('MainLayout received new message:', message);
+      // Refresh unread count when new message arrives
+      dispatch(fetchUnreadCount());
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [dispatch]);
 
   const handleLogout = async () => {

@@ -2,7 +2,7 @@
 import os
 from flask import Flask, send_from_directory
 from app.config import config
-from app.extensions import db, migrate, jwt, cors
+from app.extensions import db, migrate, jwt, cors, socketio
 
 
 def create_app(config_name=None):
@@ -18,6 +18,7 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
     cors.init_app(app, origins=app.config['CORS_ORIGINS'])
+    socketio.init_app(app)
 
     # Create upload folder if it doesn't exist
     upload_folder = os.path.join(app.root_path, '..', app.config['UPLOAD_FOLDER'])
@@ -38,6 +39,9 @@ def create_app(config_name=None):
     app.register_blueprint(interaction.bp, url_prefix='/api')
     app.register_blueprint(feed.bp, url_prefix='/api/feed')
     app.register_blueprint(message.bp, url_prefix='/api')
+
+    # Register socket events
+    from app import socket_events
 
     # Health check endpoint
     @app.route('/health')

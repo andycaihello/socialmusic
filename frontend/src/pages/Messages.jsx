@@ -30,9 +30,11 @@ import {
   setCurrentConversation,
   markConversationAsRead,
   clearError,
+  addMessageToConversation,
 } from '../store/messageSlice';
 import { userAPI } from '../api';
 import { getAvatarUrl } from '../utils/url';
+import io from 'socket.io-client';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -49,17 +51,13 @@ const Messages = () => {
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchConversations());
   }, [dispatch]);
 
   useEffect(() => {
-    console.log('=== Messages Debug ===');
-    console.log('conversations:', conversations);
-    console.log('userId from URL:', userId);
-    console.log('currentConversation:', currentConversation);
-
     if (userId) {
       const userIdNum = parseInt(userId);
       dispatch(setCurrentConversation(userIdNum));
@@ -68,7 +66,6 @@ const Messages = () => {
 
       // Find current user from conversations
       const conversation = conversations.find(c => c.user.id === userIdNum);
-      console.log('Found conversation:', conversation);
       if (conversation) {
         setCurrentUser(conversation.user);
       } else {
@@ -78,7 +75,6 @@ const Messages = () => {
     } else if (conversations.length > 0 && !currentConversation) {
       // If no userId in URL and no current conversation, select first conversation
       const firstConversation = conversations[0];
-      console.log('Auto-selecting first conversation:', firstConversation);
       navigate(`/messages/${firstConversation.user.id}`, { replace: true });
     }
   }, [userId, dispatch, conversations, currentConversation, navigate]);
@@ -102,6 +98,58 @@ const Messages = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // WebSocket connection
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    // Connect to WebSocket
+    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('WebSocket connected');
+    });
+
+    socket.on('connected', (data) => {
+      console.log('WebSocket authenticated:', data);
+    });
+
+    socket.on('new_message', (message) => {
+      console.log('New message received:', message);
+
+      // Add message to current conversation if it's from the current chat
+      if (currentConversation &&
+          (message.sender_id === currentConversation || message.receiver_id === currentConversation)) {
+        dispatch(addMessageToConversation(message));
+
+        // Mark as read if it's the current conversation
+        if (message.sender_id === currentConversation) {
+          dispatch(markConversationAsRead(currentConversation));
+        }
+      }
+
+      // Refresh conversations list to update unread counts
+      dispatch(fetchConversations());
+    });
+
+    socket.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('WebSocket disconnected');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [dispatch, currentConversation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -137,26 +185,13 @@ const Messages = () => {
 
   const formatMessageTime = (timestamp) => {
     const messageTime = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - messageTime;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
+    const year = messageTime.getFullYear();
+    const month = (messageTime.getMonth() + 1).toString().padStart(2, '0');
+    const day = messageTime.getDate().toString().padStart(2, '0');
     const hours = messageTime.getHours().toString().padStart(2, '0');
     const minutes = messageTime.getMinutes().toString().padStart(2, '0');
-    const timeStr = `${hours}:${minutes}`;
 
-    if (diffDays === 0) {
-      return timeStr;
-    } else if (diffDays === 1) {
-      return `昨天 ${timeStr}`;
-    } else if (diffDays < 7) {
-      const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-      return `${weekdays[messageTime.getDay()]} ${timeStr}`;
-    } else {
-      const month = (messageTime.getMonth() + 1).toString().padStart(2, '0');
-      const day = messageTime.getDate().toString().padStart(2, '0');
-      return `${month}-${day} ${timeStr}`;
-    }
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   return (
@@ -193,7 +228,7 @@ const Messages = () => {
         )}
       </div>
 
-      <Row style={{ height: 'calc(100vh - 64px - 73px)' }}>
+      <Row style={{ height: 'calc(100vh - 64px - 73px)', overflow: 'hidden' }}>
           {/* Conversation List */}
           <Col
             xs={0}
@@ -204,6 +239,7 @@ const Messages = () => {
               background: '#fff',
               borderRight: '1px solid #f0f0f0',
               overflowY: 'auto',
+              height: '100%',
               display: 'block',
             }}
           >
@@ -262,7 +298,7 @@ const Messages = () => {
           </Col>
 
           {/* Message Area */}
-          <Col xs={24} sm={16} md={16} lg={18}>
+          <Col xs={24} sm={16} md={16} lg={18} style={{ height: '100%', overflow: 'hidden' }}>
             {currentConversation ? (
               <div
                 style={{

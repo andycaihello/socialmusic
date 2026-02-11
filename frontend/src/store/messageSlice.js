@@ -158,8 +158,8 @@ const messageSlice = createSlice({
         const userId = action.payload;
         // Update unread count in conversations
         const conversation = state.conversations.find(c => c.user.id === userId);
-        if (conversation) {
-          state.unreadCount -= conversation.unread_count;
+        if (conversation && conversation.unread_count > 0) {
+          state.unreadCount = Math.max(0, state.unreadCount - conversation.unread_count);
           conversation.unread_count = 0;
         }
         // Mark messages as read
