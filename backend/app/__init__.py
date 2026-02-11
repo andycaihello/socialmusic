@@ -30,13 +30,14 @@ def create_app(config_name=None):
         return send_from_directory(upload_folder, filename)
 
     # Register blueprints
-    from app.api import auth, user, music, social, interaction, feed
+    from app.api import auth, user, music, social, interaction, feed, message
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(user.bp, url_prefix='/api/users')
     app.register_blueprint(music.bp, url_prefix='/api')
     app.register_blueprint(social.bp, url_prefix='/api/social')
     app.register_blueprint(interaction.bp, url_prefix='/api')
     app.register_blueprint(feed.bp, url_prefix='/api/feed')
+    app.register_blueprint(message.bp, url_prefix='/api')
 
     # Health check endpoint
     @app.route('/health')

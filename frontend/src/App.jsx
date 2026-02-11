@@ -5,12 +5,14 @@ import { ConfigProvider } from 'antd';
 import store from './store';
 import { getCurrentUser } from './store/authSlice';
 import PrivateRoute from './routes/PrivateRoute';
+import MainLayout from './components/MainLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import SongDetail from './pages/SongDetail';
 import Profile from './pages/Profile';
 import UserDetail from './pages/UserDetail';
+import Messages from './pages/Messages';
 
 // App content component that uses hooks
 const AppContent = () => {
@@ -47,7 +49,9 @@ const AppContent = () => {
           path="/"
           element={
             <PrivateRoute>
-              <Home />
+              <MainLayout>
+                <Home />
+              </MainLayout>
             </PrivateRoute>
           }
         />
@@ -55,7 +59,9 @@ const AppContent = () => {
           path="/songs/:id"
           element={
             <PrivateRoute>
-              <SongDetail />
+              <MainLayout>
+                <SongDetail />
+              </MainLayout>
             </PrivateRoute>
           }
         />
@@ -63,7 +69,9 @@ const AppContent = () => {
           path="/profile"
           element={
             <PrivateRoute>
-              <Profile />
+              <MainLayout>
+                <Profile />
+              </MainLayout>
             </PrivateRoute>
           }
         />
@@ -71,7 +79,29 @@ const AppContent = () => {
           path="/user/:id"
           element={
             <PrivateRoute>
-              <UserDetail />
+              <MainLayout>
+                <UserDetail />
+              </MainLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute>
+              <MainLayout>
+                <Messages />
+              </MainLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages/:userId"
+          element={
+            <PrivateRoute>
+              <MainLayout>
+                <Messages />
+              </MainLayout>
             </PrivateRoute>
           }
         />

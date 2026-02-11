@@ -142,4 +142,15 @@ export const feedAPI = {
   getArtistsHot: (params) => api.get('/feed/artists-hot', { params }),
 };
 
+// Message API
+export const messageAPI = {
+  sendMessage: (data) => api.post('/messages', data),
+  getConversations: () => api.get('/messages/conversations'),
+  getConversation: (userId, params) => api.get(`/messages/conversation/${userId}`, { params }),
+  markAsRead: (messageId) => api.put(`/messages/${messageId}/read`),
+  markConversationAsRead: (userId) => api.put(`/messages/conversation/${userId}/read`),
+  getUnreadCount: () => api.get('/messages/unread-count'),
+  deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
+};
+
 export default api;

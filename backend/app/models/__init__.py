@@ -3,6 +3,7 @@ from app.models.user import User
 from app.models.music import Artist, Album, Song
 from app.models.social import Follow, Like, Comment, PlayHistory
 from app.models.log import UserBehaviorLog
+from app.models.message import Message
 
 __all__ = [
     'User',
@@ -13,5 +14,6 @@ __all__ = [
     'Like',
     'Comment',
     'PlayHistory',
-    'UserBehaviorLog'
+    'UserBehaviorLog',
+    'Message'
 ]

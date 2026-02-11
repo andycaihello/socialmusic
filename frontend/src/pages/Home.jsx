@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Tabs, Card, Button, Avatar, Space, Typography, List, Tag, Row, Col, Statistic, Empty } from 'antd';
-import { UserOutlined, LogoutOutlined, CustomerServiceOutlined, FireOutlined, StarOutlined, PlayCircleOutlined, HeartOutlined, MessageOutlined } from '@ant-design/icons';
-import { logout } from '../store/authSlice';
+import { Tabs, Card, Button, Avatar, Space, Typography, List, Tag, Row, Col, Statistic, Empty } from 'antd';
+import { UserOutlined, CustomerServiceOutlined, FireOutlined, StarOutlined, PlayCircleOutlined, HeartOutlined, MessageOutlined } from '@ant-design/icons';
 import { musicAPI, feedAPI } from '../api';
 import MusicPlayer from '../components/MusicPlayer';
 import { getAvatarUrl } from '../utils/url';
 
-const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 const Home = () => {
@@ -56,11 +54,6 @@ const Home = () => {
         audioElement.play().catch(err => console.error('播放失败:', err));
       }
     }, 100);
-  };
-
-  const handleLogout = async () => {
-    await dispatch(logout());
-    navigate('/login');
   };
 
   const formatDuration = (seconds) => {
@@ -248,7 +241,7 @@ const Home = () => {
                           style={{ cursor: 'pointer' }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/users/${activity.user.id}`);
+                            navigate(`/user/${activity.user.id}`);
                           }}
                         >
                           {activity.user.nickname || activity.user.username}
@@ -256,6 +249,20 @@ const Home = () => {
                         <Text type="secondary">
                           {activity.action_type === 'like' ? '喜欢了' : '播放了'}
                         </Text>
+                        {user && user.id !== activity.user.id && (
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<MessageOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/messages/${activity.user.id}`);
+                            }}
+                            style={{ padding: 0, fontSize: 12 }}
+                          >
+                            私信
+                          </Button>
+                        )}
                       </Space>
                     }
                     description={
@@ -457,48 +464,8 @@ const Home = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      {/* 顶部导航栏 */}
-      <Header style={{
-        background: '#fff',
-        padding: '0 50px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000
-      }}>
-        <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
-          🎵 SocialMusic
-        </Title>
-
-        <Space size="large">
-          <Space size="middle" style={{ cursor: 'pointer' }} onClick={() => navigate('/profile')}>
-            <Avatar
-              size="large"
-              icon={<UserOutlined />}
-              src={getAvatarUrl(user?.avatar_url)}
-            />
-            <div style={{ lineHeight: '1.2' }}>
-              <div><Text strong>{user?.nickname || user?.username}</Text></div>
-              <div><Text type="secondary" style={{ fontSize: 12 }}>{user?.email}</Text></div>
-            </div>
-          </Space>
-          <Button
-            type="text"
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-          >
-            退出登录
-          </Button>
-        </Space>
-      </Header>
-
-      {/* 主内容区域 */}
-      <Content style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
-        <div style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
+    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
+      <div style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -510,17 +477,16 @@ const Home = () => {
             {activeTab === '1' ? <RecommendedTab /> : <ArtistsHotTab />}
           </div>
         </div>
-      </Content>
 
-      {/* 音乐播放器 */}
-      {currentSong && (
-        <MusicPlayer
-          currentSong={currentSong}
-          playlist={playlist}
-          onSongChange={setCurrentSong}
-        />
-      )}
-    </Layout>
+        {/* 音乐播放器 */}
+        {currentSong && (
+          <MusicPlayer
+            currentSong={currentSong}
+            playlist={playlist}
+            onSongChange={setCurrentSong}
+          />
+        )}
+      </div>
   );
 };
 

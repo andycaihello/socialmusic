@@ -1,7 +1,7 @@
 """User behavior log model"""
 from datetime import datetime
 from app.extensions import db
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 
 
 class UserBehaviorLog(db.Model):
@@ -14,7 +14,7 @@ class UserBehaviorLog(db.Model):
     song_id = db.Column(db.Integer, db.ForeignKey('songs.id', ondelete='SET NULL'), nullable=True)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id', ondelete='SET NULL'), nullable=True)
     duration = db.Column(db.Integer, nullable=True)  # in seconds, for play events
-    extra_data = db.Column(JSONB, nullable=True)  # Additional context data (renamed from metadata)
+    extra_data = db.Column(JSON, nullable=True)  # Additional context data (renamed from metadata)
     ip_address = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)

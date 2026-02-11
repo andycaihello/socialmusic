@@ -357,6 +357,17 @@ const SongDetail = () => {
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {formatTime(comment.created_at)}
                       </Text>
+                      {user && user.id !== comment.user.id && (
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<MessageOutlined />}
+                          onClick={() => navigate(`/messages/${comment.user.id}`)}
+                          style={{ padding: 0, fontSize: 12 }}
+                        >
+                          私信
+                        </Button>
+                      )}
                     </Space>
                   }
                   description={

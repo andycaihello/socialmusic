@@ -6,7 +6,7 @@ import {
   Spin, message, Modal, List
 } from 'antd';
 import {
-  UserOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined
+  UserOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, MessageOutlined
 } from '@ant-design/icons';
 import { userAPI, socialAPI } from '../api';
 import { getAvatarUrl } from '../utils/url';
@@ -146,18 +146,27 @@ const UserDetail = () => {
               </Title>
               <Text type="secondary">{user.bio || '这个人很懒，什么都没写'}</Text>
 
-              {/* 关注按钮 */}
+              {/* 关注按钮和发送私信按钮 */}
               {!isOwnProfile && currentUser && (
                 <div style={{ marginTop: 16 }}>
-                  <Button
-                    type={isFollowing ? 'default' : 'primary'}
-                    icon={isFollowing ? <UserDeleteOutlined /> : <UserAddOutlined />}
-                    onClick={handleFollow}
-                    loading={followLoading}
-                    size="large"
-                  >
-                    {isFollowing ? '取消关注' : '关注'}
-                  </Button>
+                  <Space>
+                    <Button
+                      type={isFollowing ? 'default' : 'primary'}
+                      icon={isFollowing ? <UserDeleteOutlined /> : <UserAddOutlined />}
+                      onClick={handleFollow}
+                      loading={followLoading}
+                      size="large"
+                    >
+                      {isFollowing ? '取消关注' : '关注'}
+                    </Button>
+                    <Button
+                      icon={<MessageOutlined />}
+                      onClick={() => navigate(`/messages/${id}`)}
+                      size="large"
+                    >
+                      发送私信
+                    </Button>
+                  </Space>
                 </div>
               )}
 
