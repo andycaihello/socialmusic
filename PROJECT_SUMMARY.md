@@ -3,11 +3,12 @@
 ## 项目概述
 
 **项目名称**: SocialMusic 社交音乐平台
-**开发时间**: 2026年2月10日
+**开发时间**: 2026年2月10日 - 2月11日
 **项目类型**: 全栈 Web 应用
-**技术栈**: Flask + React + SQLite
-**代码规模**: 5,695 行（不含第三方依赖）
+**技术栈**: Flask + React + PostgreSQL
+**代码规模**: 6,200+ 行（不含第三方依赖）
 **GitHub**: https://github.com/andycaihello/socialmusic
+**生产环境**: http://47.112.27.160
 
 ---
 
@@ -21,8 +22,10 @@
 - ✅ 提供音乐浏览和播放功能
 - ✅ 构建社交网络（关注、好友动态）
 - ✅ 支持用户互动（点赞、评论）
+- ✅ 实现私信系统（WebSocket 实时通信）
 - ✅ 记录完整的用户行为日志
 - ✅ 响应式设计，支持多端访问
+- ✅ 生产环境部署（阿里云）
 
 ---
 
@@ -199,6 +202,92 @@
 4. 推送代码到远程仓库
 5. 提交信息包含详细的功能说明
 
+### 2.11 Phase 11: 私信功能
+
+**功能实现**
+1. 创建 Message 数据模型（sender_id、receiver_id、content、is_read）
+2. 实现发送私信 API（/api/messages）
+3. 实现获取对话列表 API（/api/messages/conversations）
+4. 实现获取对话历史 API（/api/messages/:user_id）
+5. 实现标记已读 API（/api/messages/:user_id/read）
+6. 实现未读消息计数 API（/api/messages/unread）
+
+**前端开发**
+1. 创建 Messages.jsx 私信页面
+2. 实现对话列表和消息历史双栏布局
+3. 集成 WebSocket（socket.io-client）实现实时消息推送
+4. 在 MainLayout 显示未读消息徽章
+5. 支持响应式设计（移动端友好）
+
+**WebSocket 实时通信**
+1. 集成 Flask-SocketIO
+2. 创建 socket_events.py 处理 WebSocket 事件
+3. 实现用户房间管理（user_xxx）
+4. 新消息实时推送到接收者
+5. 自动更新未读消息数量
+
+**遇到的问题与解决**
+- ❌ **问题**: 对话列表查询逻辑复杂
+  - ✅ **解决**: 使用 SQLAlchemy 的 or_ 和分组查询优化
+- ❌ **问题**: 时间格式不一致
+  - ✅ **解决**: 统一使用 `datetime.now()` 替代 `datetime.utcnow()`
+
+### 2.12 Phase 12: 阿里云生产环境部署
+
+**服务器配置**
+- 服务器：阿里云 ECS
+- 公网 IP：47.112.27.160
+- 操作系统：Ubuntu
+- 数据库：PostgreSQL
+
+**部署流程**
+1. **后端部署**
+   - 通过 Git 拉取最新代码
+   - 安装 Python 依赖（Flask-SocketIO、gevent、gevent-websocket）
+   - 配置 Gunicorn 使用 GeventWebSocketWorker
+   - 后台运行 Gunicorn 服务
+
+2. **前端部署**
+   - 本地执行 `npm run build` 构建生产版本
+   - 通过 SCP 上传 dist 文件到服务器
+   - 配置 Nginx 静态文件服务
+
+3. **Nginx 配置**
+   - 配置静态文件服务（/）
+   - 配置 API 代理（/api）
+   - **新增 WebSocket 代理（/socket.io）**
+   - 配置上传文件访问（/uploads）
+   - 启用 Gzip 压缩
+
+4. **WebSocket 支持**
+   - 更新 Gunicorn worker_class 为 GeventWebSocketWorker
+   - 在 Nginx 中添加 WebSocket 升级配置
+   - 设置长连接超时（86400 秒）
+
+**关键配置**
+```python
+# gunicorn_config.py
+worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"
+workers = 1
+```
+
+```nginx
+# Nginx WebSocket 代理
+location /socket.io {
+    proxy_pass http://127.0.0.1:5000/socket.io;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 86400;
+}
+```
+
+**部署验证**
+- ✅ 后端健康检查通过（/health）
+- ✅ 前端页面正常访问
+- ✅ WebSocket 连接成功
+- ✅ 实时消息推送正常
+
 ---
 
 ## 三、技术架构
@@ -213,13 +302,17 @@ Flask Application
 │   ├── music.py         # 音乐接口
 │   ├── social.py        # 社交功能
 │   ├── interaction.py   # 互动功能
+│   ├── message.py       # 私信接口
 │   └── feed.py          # 动态推荐
+├── WebSocket Layer
+│   └── socket_events.py # WebSocket 事件处理
 ├── Service Layer
 │   └── log_service.py   # 日志服务
 ├── Model Layer (SQLAlchemy)
 │   ├── user.py          # 用户模型
 │   ├── music.py         # 音乐模型
 │   ├── social.py        # 社交模型
+│   ├── message.py       # 私信模型
 │   └── log.py           # 日志模型
 └── Utils
     ├── decorators.py    # 认证装饰器
@@ -236,11 +329,14 @@ React Application
 │   ├── Home.jsx         # 首页
 │   ├── Profile.jsx      # 个人中心
 │   ├── SongDetail.jsx   # 歌曲详情
-│   └── UserDetail.jsx   # 用户详情
+│   ├── UserDetail.jsx   # 用户详情
+│   └── Messages.jsx     # 私信页面
 ├── Components
-│   └── MusicPlayer.jsx  # 音乐播放器
+│   ├── MusicPlayer.jsx  # 音乐播放器
+│   └── MainLayout.jsx   # 主布局（含未读消息）
 ├── Store (Redux)
-│   └── authSlice.js     # 认证状态
+│   ├── authSlice.js     # 认证状态
+│   └── messageSlice.js  # 私信状态
 ├── API
 │   └── index.js         # API 客户端
 └── Routes
@@ -257,12 +353,14 @@ React Application
 - follows (关注关系表)
 - likes (点赞表)
 - comments (评论表)
+- messages (私信表)
 - user_behavior_logs (行为日志表)
 
 **关键索引**
 - users: email, username, phone
 - songs: artist_id, play_count, like_count
 - follows: follower_id, following_id
+- messages: sender_id, receiver_id, created_at
 - user_behavior_logs: user_id, action_type, created_at
 
 ---
@@ -340,6 +438,39 @@ React Application
 - 推荐算法训练数据
 - 用户画像构建
 - 数据统计和报表
+
+### 4.6 私信系统
+
+**核心功能**
+- 发送/接收私信
+- 对话列表管理
+- 对话历史查看
+- 消息已读标记
+- 未读消息计数
+
+**WebSocket 实时通信**
+- 使用 Flask-SocketIO 和 socket.io-client
+- 用户连接时自动加入专属房间（user_xxx）
+- 新消息实时推送到接收者
+- 自动更新未读消息徽章
+- 支持断线重连
+
+**技术实现**
+```python
+# 后端 - 发送消息并推送
+socketio.emit('new_message', message_data, room=f'user_{receiver_id}')
+
+# 前端 - 监听新消息
+socket.on('new_message', (message) => {
+    dispatch(addMessageToConversation(message));
+});
+```
+
+**用户体验优化**
+- 对话列表按最新消息排序
+- 显示未读消息数量
+- 响应式布局（移动端友好）
+- 消息自动滚动到底部
 
 ---
 
@@ -463,30 +594,44 @@ activities = UserBehaviorLog.query.filter(
 
 ## 七、项目亮点
 
-### 7.1 完整的用户行为追踪
+### 7.1 WebSocket 实时通信
+- 使用 Flask-SocketIO 实现 WebSocket 服务
+- 用户消息实时推送
+- 未读消息实时更新
+- 生产环境支持（Gunicorn + gevent）
+
+### 7.2 完整的用户行为追踪
 - 记录 13 种用户行为
 - 包含完整的上下文信息（IP、User Agent、时间戳）
 - 为推荐算法提供数据基础
 
-### 7.2 优雅的错误处理
+### 7.3 优雅的错误处理
 - 前端自动刷新过期 token
 - 统一的错误提示
 - 友好的用户体验
 
-### 7.3 模块化架构
+### 7.4 模块化架构
 - 后端 Blueprint 分层清晰
 - 前端组件复用性强
 - 代码可维护性高
 
-### 7.4 响应式设计
+### 7.5 响应式设计
 - 支持 PC、平板、移动端
 - 使用 Ant Design Grid 系统
 - 断点设置合理（xs、lg、xl）
 
-### 7.5 实时数据更新
+### 7.6 实时数据更新
 - 点赞数实时更新
 - 评论数实时更新
 - 播放次数实时更新
+- 消息实时推送
+
+### 7.7 生产环境部署
+- 阿里云 ECS 服务器
+- Nginx 反向代理
+- PostgreSQL 生产数据库
+- Gunicorn 进程管理
+- WebSocket 支持配置
 
 ---
 
@@ -516,14 +661,14 @@ activities = UserBehaviorLog.query.filter(
 
 ## 九、未来规划
 
-### 9.1 Phase 6: 推荐算法
+### 9.1 推荐算法
 - [ ] 协同过滤推荐
 - [ ] 基于内容的推荐
 - [ ] 用户画像构建
 - [ ] 热门歌曲计算
 - [ ] 个性化 Feed 生成
 
-### 9.2 Phase 7: 性能优化
+### 9.2 性能优化
 - [ ] Redis 缓存热门数据
 - [ ] 数据库查询优化
 - [ ] API 限流保护
@@ -534,11 +679,11 @@ activities = UserBehaviorLog.query.filter(
 - [ ] 搜索功能（歌曲、歌手、用户）
 - [ ] 播放列表管理
 - [ ] 歌曲收藏功能
-- [ ] 私信系统
 - [ ] 通知系统
 - [ ] 音乐分享功能
 - [ ] 歌词显示
 - [ ] 音乐可视化
+- [ ] 群聊功能
 
 ---
 
@@ -620,17 +765,20 @@ backend/
 │   ├── __init__.py
 │   ├── config.py
 │   ├── extensions.py
+│   ├── socket_events.py
 │   ├── api/
 │   │   ├── auth.py
 │   │   ├── user.py
 │   │   ├── music.py
 │   │   ├── social.py
 │   │   ├── interaction.py
+│   │   ├── message.py
 │   │   └── feed.py
 │   ├── models/
 │   │   ├── user.py
 │   │   ├── music.py
 │   │   ├── social.py
+│   │   ├── message.py
 │   │   └── log.py
 │   ├── services/
 │   │   └── log_service.py
@@ -640,6 +788,7 @@ backend/
 ├── migrations/
 ├── uploads/
 ├── requirements.txt
+├── gunicorn_config.py
 └── run.py
 ```
 
@@ -650,29 +799,36 @@ frontend/
 │   ├── api/
 │   │   └── index.js
 │   ├── components/
-│   │   └── MusicPlayer.jsx
+│   │   ├── MusicPlayer.jsx
+│   │   └── MainLayout.jsx
 │   ├── pages/
 │   │   ├── Login.jsx
 │   │   ├── Register.jsx
 │   │   ├── Home.jsx
 │   │   ├── Profile.jsx
 │   │   ├── SongDetail.jsx
-│   │   └── UserDetail.jsx
+│   │   ├── UserDetail.jsx
+│   │   └── Messages.jsx
 │   ├── store/
 │   │   ├── index.js
-│   │   └── authSlice.js
+│   │   ├── authSlice.js
+│   │   └── messageSlice.js
 │   ├── routes/
 │   │   └── PrivateRoute.jsx
+│   ├── utils/
+│   │   └── url.js
 │   ├── App.jsx
 │   └── main.jsx
+├── .env.production
 ├── package.json
 └── vite.config.js
 ```
 
 ---
 
-**报告生成时间**: 2026年2月10日
-**项目状态**: 核心功能已完成，可正常运行
+**报告生成时间**: 2026年2月11日
+**项目状态**: 核心功能已完成，已部署到生产环境
+**生产环境**: http://47.112.27.160
 **GitHub 仓库**: https://github.com/andycaihello/socialmusic
 
 ---
