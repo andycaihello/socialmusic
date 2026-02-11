@@ -105,7 +105,12 @@ const Messages = () => {
     if (!token) return;
 
     // Connect to WebSocket
-    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+    // In production, connect to current domain; in dev, connect to localhost:5001
+    const socketUrl = import.meta.env.VITE_API_URL === '/api'
+      ? window.location.origin
+      : 'http://localhost:5001';
+
+    const socket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling']
     });
