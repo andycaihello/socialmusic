@@ -36,7 +36,10 @@ const MainLayout = ({ children }) => {
 
     const socket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket'], // Try polling first, then upgrade to websocket
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
     });
 
     socketRef.current = socket;
