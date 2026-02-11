@@ -15,7 +15,13 @@ export const login = createAsyncThunk(
 
       return { user, access_token, refresh_token };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Login failed');
+      console.error('Login API error:', error);
+      // 提取错误信息
+      const errorMessage = error.response?.data?.error
+        || error.response?.data?.message
+        || error.message
+        || '登录失败，请检查用户名和密码';
+      return rejectWithValue(errorMessage);
     }
   }
 );

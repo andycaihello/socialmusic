@@ -9,6 +9,7 @@ import {
   UserOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined
 } from '@ant-design/icons';
 import { userAPI, socialAPI } from '../api';
+import { getAvatarUrl } from '../utils/url';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -117,7 +118,7 @@ const UserDetail = () => {
   }
 
   const isOwnProfile = currentUser && currentUser.id === parseInt(id);
-  const avatarUrl = user.avatar_url ? `http://localhost:5001${user.avatar_url}` : null;
+  const avatarUrl = getAvatarUrl(user.avatar_url);
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
@@ -228,7 +229,7 @@ const UserDetail = () => {
                   avatar={
                     <Avatar
                       icon={<UserOutlined />}
-                      src={item.avatar_url ? `http://localhost:5001${item.avatar_url}` : null}
+                      src={getAvatarUrl(item.avatar_url)}
                     />
                   }
                   title={item.nickname || item.username}
@@ -262,7 +263,7 @@ const UserDetail = () => {
                   avatar={
                     <Avatar
                       icon={<UserOutlined />}
-                      src={item.avatar_url ? `http://localhost:5001${item.avatar_url}` : null}
+                      src={getAvatarUrl(item.avatar_url)}
                     />
                   }
                   title={item.nickname || item.username}

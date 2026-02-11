@@ -6,6 +6,7 @@ import { UserOutlined, LogoutOutlined, CustomerServiceOutlined, FireOutlined, St
 import { logout } from '../store/authSlice';
 import { musicAPI, feedAPI } from '../api';
 import MusicPlayer from '../components/MusicPlayer';
+import { getAvatarUrl } from '../utils/url';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -478,7 +479,7 @@ const Home = () => {
             <Avatar
               size="large"
               icon={<UserOutlined />}
-              src={user?.avatar_url ? `http://localhost:5001${user.avatar_url}` : null}
+              src={getAvatarUrl(user?.avatar_url)}
             />
             <div style={{ lineHeight: '1.2' }}>
               <div><Text strong>{user?.nickname || user?.username}</Text></div>

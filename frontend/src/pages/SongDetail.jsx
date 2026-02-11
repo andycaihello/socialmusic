@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { musicAPI, interactionAPI } from '../api';
 import MusicPlayer from '../components/MusicPlayer';
+import { getAvatarUrl } from '../utils/url';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -339,7 +340,7 @@ const SongDetail = () => {
                   avatar={
                     <Avatar
                       icon={<CustomerServiceOutlined />}
-                      src={comment.user?.avatar_url ? `http://localhost:5001${comment.user.avatar_url}` : null}
+                      src={getAvatarUrl(comment.user?.avatar_url)}
                       style={{ cursor: 'pointer' }}
                       onClick={() => navigate(`/user/${comment.user.id}`)}
                     />

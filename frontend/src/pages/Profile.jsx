@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { userAPI, socialAPI } from '../api';
 import { getCurrentUser } from '../store/authSlice';
+import { getAvatarUrl } from '../utils/url';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -140,9 +141,7 @@ const Profile = () => {
     );
   }
 
-  const avatarUrl = user.avatar_url
-    ? `http://localhost:5001${user.avatar_url}`
-    : null;
+  const avatarUrl = getAvatarUrl(user.avatar_url);
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
@@ -393,7 +392,7 @@ const Profile = () => {
                   avatar={
                     <Avatar
                       icon={<UserOutlined />}
-                      src={item.avatar_url ? `http://localhost:5001${item.avatar_url}` : null}
+                      src={getAvatarUrl(item.avatar_url)}
                     />
                   }
                   title={item.nickname || item.username}
@@ -427,7 +426,7 @@ const Profile = () => {
                   avatar={
                     <Avatar
                       icon={<UserOutlined />}
-                      src={item.avatar_url ? `http://localhost:5001${item.avatar_url}` : null}
+                      src={getAvatarUrl(item.avatar_url)}
                     />
                   }
                   title={item.nickname || item.username}
