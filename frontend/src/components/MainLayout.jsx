@@ -70,7 +70,7 @@ const MainLayout = ({ children }) => {
       <Header
         style={{
           background: '#fff',
-          padding: '0 50px',
+          padding: '0 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -80,11 +80,20 @@ const MainLayout = ({ children }) => {
           zIndex: 1000,
         }}
       >
-        <Title level={3} style={{ margin: 0, color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <Title
+          level={3}
+          style={{
+            margin: 0,
+            color: '#1890ff',
+            cursor: 'pointer',
+            fontSize: 'clamp(14px, 4vw, 20px)', // 响应式字体大小
+          }}
+          onClick={() => navigate('/')}
+        >
           🎵 SocialMusic
         </Title>
 
-        <Space size="large">
+        <Space size="middle">
           {/* Message icon with unread badge */}
           <Badge count={unreadCount} overflowCount={99}>
             <Button
@@ -95,13 +104,19 @@ const MainLayout = ({ children }) => {
             />
           </Badge>
 
-          <Space size="middle" style={{ cursor: 'pointer' }} onClick={() => navigate('/profile')}>
+          <Space
+            size="small"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/profile')}
+            className="user-info-space"
+          >
             <Avatar
               size="large"
               icon={<UserOutlined />}
               src={getAvatarUrl(user?.avatar_url)}
             />
-            <div style={{ lineHeight: '1.2' }}>
+            {/* 移动端隐藏用户信息文字 */}
+            <div style={{ lineHeight: '1.2' }} className="user-info-text">
               <div>
                 <Text strong>{user?.nickname || user?.username}</Text>
               </div>
@@ -112,11 +127,30 @@ const MainLayout = ({ children }) => {
               </div>
             </div>
           </Space>
-          <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
-            退出登录
+
+          {/* 移动端隐藏退出登录按钮文字 */}
+          <Button
+            type="text"
+            icon={<LogoutOutlined />}
+            onClick={handleLogout}
+            className="logout-button"
+          >
+            <span className="logout-text">退出登录</span>
           </Button>
         </Space>
       </Header>
+
+      {/* 添加响应式样式 */}
+      <style>{`
+        @media (max-width: 768px) {
+          .user-info-text {
+            display: none !important;
+          }
+          .logout-text {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       {/* 页面内容 */}
       {children}

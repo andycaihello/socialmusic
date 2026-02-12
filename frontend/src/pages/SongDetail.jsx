@@ -190,56 +190,62 @@ const SongDetail = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
-      <Content style={{ padding: '24px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      <Content style={{ padding: '16px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         {/* 返回按钮 */}
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
-          style={{ marginBottom: 24 }}
+          style={{ marginBottom: 16 }}
         >
           返回
         </Button>
 
         {/* 歌曲信息卡片 */}
-        <Card style={{ marginBottom: 24 }}>
+        <Card style={{ marginBottom: 16 }}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Space size="large" align="start">
+            {/* 响应式布局：移动端垂直排列，桌面端水平排列 */}
+            <div className="song-info-container">
               {/* 封面 */}
-              {song.cover_url ? (
-                <img
-                  src={song.cover_url}
-                  alt={song.title}
-                  style={{
-                    width: 200,
-                    height: 200,
+              <div className="song-cover">
+                {song.cover_url ? (
+                  <img
+                    src={song.cover_url}
+                    alt={song.title}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: 8,
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    background: '#f0f0f0',
                     borderRadius: 8,
-                    objectFit: 'cover'
-                  }}
-                />
-              ) : (
-                <div style={{
-                  width: 200,
-                  height: 200,
-                  background: '#f0f0f0',
-                  borderRadius: 8,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <CustomerServiceOutlined style={{ fontSize: 64, color: '#999' }} />
-                </div>
-              )}
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <CustomerServiceOutlined style={{ fontSize: 64, color: '#999' }} />
+                  </div>
+                )}
+              </div>
 
               {/* 歌曲信息 */}
               <div style={{ flex: 1 }}>
-                <Title level={2} style={{ marginBottom: 8 }}>{song.title}</Title>
-                <Space size="middle" style={{ marginBottom: 16 }}>
-                  <Text strong style={{ fontSize: 16 }}>{song.artist?.name}</Text>
+                <Title level={2} style={{ marginBottom: 8, fontSize: 'clamp(20px, 5vw, 28px)' }}>
+                  {song.title}
+                </Title>
+                <Space size="middle" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
+                  <Text strong style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>{song.artist?.name}</Text>
                   {song.album && <Text type="secondary">{song.album.title}</Text>}
                   <Tag color="blue">{song.genre}</Tag>
                 </Space>
 
-                <Space size="large" style={{ marginBottom: 24 }}>
+                {/* 统计信息 - 响应式网格 */}
+                <div className="song-stats">
                   <Statistic
                     title="播放"
                     value={formatNumber(song.play_count)}
@@ -259,9 +265,9 @@ const SongDetail = () => {
                     title="时长"
                     value={formatDuration(song.duration)}
                   />
-                </Space>
+                </div>
 
-                <Space size="middle">
+                <Space size="middle" style={{ marginTop: 16, flexWrap: 'wrap' }}>
                   <Button
                     type="primary"
                     size="large"
@@ -279,7 +285,7 @@ const SongDetail = () => {
                   </Button>
                 </Space>
               </div>
-            </Space>
+            </div>
           </Space>
         </Card>
 
@@ -346,7 +352,7 @@ const SongDetail = () => {
                     />
                   }
                   title={
-                    <Space>
+                    <Space style={{ flexWrap: 'wrap' }}>
                       <Text
                         strong
                         style={{ cursor: 'pointer' }}
@@ -433,6 +439,54 @@ const SongDetail = () => {
           onSongChange={setCurrentSong}
         />
       )}
+
+      {/* 响应式样式 */}
+      <style>{`
+        .song-info-container {
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+
+        .song-cover {
+          width: 200px;
+          height: 200px;
+          flex-shrink: 0;
+        }
+
+        .song-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+          .song-info-container {
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .song-cover {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            aspect-ratio: 1;
+          }
+
+          .song-stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .song-stats {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+      `}</style>
     </Layout>
   );
 };

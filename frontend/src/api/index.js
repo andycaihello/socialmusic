@@ -117,6 +117,7 @@ export const musicAPI = {
   getSongDetail: (songId) => api.get(`/songs/${songId}`),
   getTrendingSongs: () => api.get('/songs/trending'),
   getLatestSongs: () => api.get('/songs/latest'),
+  getArtists: () => api.get('/artists'),
   getArtist: (artistId) => api.get(`/artists/${artistId}`),
   getArtistSongs: (artistId) => api.get(`/artists/${artistId}/songs`),
 };

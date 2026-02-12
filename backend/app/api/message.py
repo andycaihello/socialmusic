@@ -1,4 +1,5 @@
 """Message API endpoints"""
+import json
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_, and_, func
@@ -6,6 +7,7 @@ from app.extensions import db, socketio
 from app.models.message import Message
 from app.models.social import Follow
 from app.models.user import User
+from app.models.log import UserBehaviorLog
 
 bp = Blueprint('message', __name__)
 
@@ -49,6 +51,30 @@ def send_message():
 
     db.session.add(message)
     db.session.commit()
+
+    # Check if this is a song share and log the behavior
+    try:
+        content_data = json.loads(content)
+        if content_data.get('type') == 'song_share' and content_data.get('song'):
+            song_id = content_data['song'].get('id')
+            if song_id:
+                # Log share behavior
+                share_log = UserBehaviorLog(
+                    user_id=current_user_id,
+                    action_type='share',
+                    song_id=song_id,
+                    extra_data={
+                        'shared_to_user_id': receiver_id,
+                        'share_method': 'private_message'
+                    },
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                db.session.add(share_log)
+                db.session.commit()
+    except (json.JSONDecodeError, KeyError):
+        # Not a song share message, skip logging
+        pass
 
     # Emit WebSocket event to receiver
     message_data = message.to_dict()

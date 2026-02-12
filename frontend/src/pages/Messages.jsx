@@ -16,12 +16,17 @@ import {
   Badge,
   Empty,
   Spin,
+  Card,
   message as antMessage,
 } from 'antd';
 import {
   SendOutlined,
   UserOutlined,
   ArrowLeftOutlined,
+  PlayCircleOutlined,
+  CustomerServiceOutlined,
+  HeartOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import {
   fetchConversations,
@@ -35,6 +40,7 @@ import {
 import { userAPI } from '../api';
 import { getAvatarUrl } from '../utils/url';
 import io from 'socket.io-client';
+import MusicPlayer from '../components/MusicPlayer';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -52,6 +58,7 @@ const Messages = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const [currentSong, setCurrentSong] = useState(null);
 
   useEffect(() => {
     dispatch(fetchConversations());
@@ -72,8 +79,9 @@ const Messages = () => {
         // If no conversation exists, fetch user info
         fetchUserInfo(userIdNum);
       }
-    } else if (conversations.length > 0 && !currentConversation) {
-      // If no userId in URL and no current conversation, select first conversation
+    } else if (conversations.length > 0 && !currentConversation && window.innerWidth >= 576) {
+      // 桌面端：如果没有userId且没有选中会话，自动选择第一个会话
+      // 移动端：保持在会话列表页，不自动跳转
       const firstConversation = conversations[0];
       navigate(`/messages/${firstConversation.user.id}`, { replace: true });
     }
@@ -191,6 +199,29 @@ const Messages = () => {
     }
   };
 
+  const handlePlaySong = (songData, e) => {
+    e.stopPropagation();
+    // Convert song data to the format expected by MusicPlayer
+    const song = {
+      id: songData.song.id,
+      title: songData.song.title,
+      artist: { name: songData.song.artist },
+      cover_url: songData.song.cover_url,
+      duration: songData.song.duration,
+      play_count: songData.song.play_count,
+      like_count: songData.song.like_count,
+      comment_count: songData.song.comment_count,
+    };
+    setCurrentSong(song);
+    // Auto play
+    setTimeout(() => {
+      const audioElement = document.querySelector('audio');
+      if (audioElement) {
+        audioElement.play().catch(err => console.error('播放失败:', err));
+      }
+    }, 100);
+  };
+
   const formatMessageTime = (timestamp) => {
     const messageTime = new Date(timestamp);
     const year = messageTime.getFullYear();
@@ -202,12 +233,138 @@ const Messages = () => {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
+  const renderMessageContent = (msg) => {
+    try {
+      const parsed = JSON.parse(msg.content);
+      if (parsed.type === 'song_share' && parsed.song) {
+        // Return a special marker for song share
+        return { isSongShare: true, data: parsed };
+      }
+    } catch (e) {
+      // Not a JSON message, render as text
+    }
+
+    // Regular text message
+    return { isSongShare: false, content: msg.content };
+  };
+
+  const renderSongCard = (songData) => {
+    return (
+      <Card
+        hoverable
+        style={{
+          maxWidth: 320,
+          background: '#fff',
+          border: '1px solid #e8e8e8',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}
+        bodyStyle={{ padding: 0 }}
+      >
+        {/* 封面图片 - 点击跳转详情页 */}
+        <div
+          onClick={() => navigate(`/songs/${songData.song.id}`)}
+          style={{ cursor: 'pointer' }}
+        >
+          {songData.song.cover_url ? (
+            <img
+              src={songData.song.cover_url}
+              alt={songData.song.title}
+              style={{
+                width: '100%',
+                height: 180,
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: 180,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CustomerServiceOutlined style={{ fontSize: 64, color: '#fff' }} />
+            </div>
+          )}
+        </div>
+
+        {/* 歌曲信息 */}
+        <div style={{ padding: 16 }}>
+          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <div>
+              <Text strong style={{ fontSize: 16, display: 'block', color: '#000' }}>
+                {songData.song.title}
+              </Text>
+              <Text type="secondary" style={{ fontSize: 14 }}>
+                {songData.song.artist}
+              </Text>
+            </div>
+
+            {/* 标签信息 */}
+            <Space size="middle" style={{ marginTop: 8 }}>
+              {songData.song.play_count !== undefined && (
+                <Space size={4}>
+                  <PlayCircleOutlined style={{ color: '#999', fontSize: 14 }} />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {songData.song.play_count >= 10000
+                      ? (songData.song.play_count / 10000).toFixed(1) + '万'
+                      : songData.song.play_count}
+                  </Text>
+                </Space>
+              )}
+              {songData.song.like_count !== undefined && (
+                <Space size={4}>
+                  <HeartOutlined style={{ color: '#999', fontSize: 14 }} />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {songData.song.like_count >= 10000
+                      ? (songData.song.like_count / 10000).toFixed(1) + '万'
+                      : songData.song.like_count}
+                  </Text>
+                </Space>
+              )}
+              {songData.song.comment_count !== undefined && (
+                <Space size={4}>
+                  <MessageOutlined style={{ color: '#999', fontSize: 14 }} />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {songData.song.comment_count >= 10000
+                      ? (songData.song.comment_count / 10000).toFixed(1) + '万'
+                      : songData.song.comment_count}
+                  </Text>
+                </Space>
+              )}
+              {songData.song.duration && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {Math.floor(songData.song.duration / 60)}:{(songData.song.duration % 60).toString().padStart(2, '0')}
+                </Text>
+              )}
+            </Space>
+
+            {/* 播放按钮 - 直接播放 */}
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              size="large"
+              block
+              style={{ marginTop: 12 }}
+              onClick={(e) => handlePlaySong(songData, e)}
+            >
+              立即播放
+            </Button>
+          </Space>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div style={{ background: '#f0f2f5' }}>
-      {/* 页面标题栏 */}
+      {/* 页面标题栏 - 移动端根据是否选中会话显示不同内容 */}
       <div style={{
         background: '#fff',
-        padding: '16px 24px',
+        padding: '16px',
         borderBottom: '1px solid #f0f0f0',
         display: 'flex',
         alignItems: 'center',
@@ -216,7 +373,14 @@ const Messages = () => {
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/')}
+          onClick={() => {
+            // 移动端：如果有选中的会话（有userId），返回会话列表；否则返回首页
+            if (userId) {
+              navigate('/messages');
+            } else {
+              navigate('/');
+            }
+          }}
         />
         {currentUser ? (
           <Space>
@@ -225,21 +389,21 @@ const Messages = () => {
               icon={<UserOutlined />}
               src={getAvatarUrl(currentUser.avatar_url)}
             />
-            <Typography.Title level={4} style={{ margin: 0 }}>
+            <Typography.Title level={4} style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 20px)' }}>
               与 {currentUser.nickname || currentUser.username} 的对话
             </Typography.Title>
           </Space>
         ) : (
-          <Typography.Title level={4} style={{ margin: 0 }}>
+          <Typography.Title level={4} style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 20px)' }}>
             私信
           </Typography.Title>
         )}
       </div>
 
       <Row style={{ height: 'calc(100vh - 64px - 73px)', overflow: 'hidden' }}>
-          {/* Conversation List */}
+          {/* Conversation List - 移动端：仅在没有userId时显示；桌面端：始终显示 */}
           <Col
-            xs={0}
+            xs={userId ? 0 : 24}
             sm={8}
             md={8}
             lg={6}
@@ -248,7 +412,7 @@ const Messages = () => {
               borderRight: '1px solid #f0f0f0',
               overflowY: 'auto',
               height: '100%',
-              display: 'block',
+              display: userId && window.innerWidth < 576 ? 'none' : 'block',
             }}
           >
             <List
@@ -292,7 +456,15 @@ const Messages = () => {
                           style={{ fontSize: 12, display: 'block' }}
                         >
                           {conversation.last_message.is_from_me ? '我: ' : ''}
-                          {conversation.last_message.content}
+                          {(() => {
+                            try {
+                              const parsed = JSON.parse(conversation.last_message.content);
+                              if (parsed.type === 'song_share') {
+                                return '[分享了一首歌曲]';
+                              }
+                            } catch (e) {}
+                            return conversation.last_message.content;
+                          })()}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 11 }}>
                           {formatMessageTime(conversation.last_message.created_at)}
@@ -305,8 +477,18 @@ const Messages = () => {
             />
           </Col>
 
-          {/* Message Area */}
-          <Col xs={24} sm={16} md={16} lg={18} style={{ height: '100%', overflow: 'hidden' }}>
+          {/* Message Area - 移动端：仅在有userId时显示；桌面端：始终显示 */}
+          <Col
+            xs={userId ? 24 : 0}
+            sm={16}
+            md={16}
+            lg={18}
+            style={{
+              height: '100%',
+              overflow: 'hidden',
+              display: !userId && window.innerWidth < 576 ? 'none' : 'block',
+            }}
+          >
             {currentConversation ? (
               <div
                 style={{
@@ -334,6 +516,56 @@ const Messages = () => {
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                       {messages.map((msg) => {
                         const isFromMe = msg.sender_id === user?.id;
+                        const messageContent = renderMessageContent(msg);
+
+                        // Check if this is a song share message
+                        if (messageContent.isSongShare) {
+                          return (
+                            <div
+                              key={msg.id}
+                              style={{
+                                display: 'flex',
+                                justifyContent: isFromMe ? 'flex-end' : 'flex-start',
+                                padding: '4px 0',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  maxWidth: '70%',
+                                  display: 'flex',
+                                  flexDirection: isFromMe ? 'row-reverse' : 'row',
+                                  gap: 8,
+                                  alignItems: 'flex-start',
+                                }}
+                              >
+                                <Avatar
+                                  size={36}
+                                  icon={<UserOutlined />}
+                                  src={getAvatarUrl(
+                                    isFromMe ? user?.avatar_url : msg.sender?.avatar_url
+                                  )}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  {renderSongCard(messageContent.data)}
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      color: '#999',
+                                      marginTop: 4,
+                                      textAlign: isFromMe ? 'right' : 'left',
+                                      paddingLeft: isFromMe ? 0 : 4,
+                                      paddingRight: isFromMe ? 4 : 0,
+                                    }}
+                                  >
+                                    {formatMessageTime(msg.created_at)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Regular text message
                         return (
                           <div
                             key={msg.id}
@@ -373,7 +605,7 @@ const Messages = () => {
                                     lineHeight: 1.5,
                                   }}
                                 >
-                                  {msg.content}
+                                  {messageContent.content}
                                 </div>
                                 <div
                                   style={{
@@ -442,6 +674,38 @@ const Messages = () => {
             )}
           </Col>
         </Row>
+
+        {/* 音乐播放器 */}
+        {currentSong && (
+          <MusicPlayer
+            currentSong={currentSong}
+            playlist={[currentSong]}
+            onSongChange={setCurrentSong}
+          />
+        )}
+
+        {/* 响应式样式 */}
+        <style>{`
+          /* 移动端：完全隐藏另一侧 */
+          @media (max-width: 575px) {
+            /* 当有userId时，完全隐藏会话列表 */
+            .ant-col-xs-0 {
+              display: none !important;
+            }
+            /* 当没有userId时，完全隐藏对话详情 */
+            .ant-col-xs-24 {
+              display: block !important;
+            }
+          }
+
+          /* 桌面端：显示分屏布局 */
+          @media (min-width: 576px) {
+            .ant-col-sm-8,
+            .ant-col-sm-16 {
+              display: block !important;
+            }
+          }
+        `}</style>
       </div>
   );
 };
