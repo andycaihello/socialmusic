@@ -87,8 +87,9 @@ const Login = () => {
             minHeight: isMobile ? 'auto' : '50vh'
           }}>
             <div style={{ textAlign: 'center', color: '#fff', maxWidth: 600 }}>
-              <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 24 }}>
-                🎵 OnBeat合拍
+              <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '8px' : '12px' }}>
+                <span>🎵</span>
+                <span>OnBeat合拍</span>
               </Title>
               <Title level={3} style={{ color: '#fff', fontWeight: 'normal', marginBottom: isMobile ? 8 : 16 }}>
                 发现音乐，分享快乐

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Button, Card, message, Row, Col, Typography } from 'antd';
@@ -12,6 +12,14 @@ const Register = () => {
   const navigate = useNavigate();
   const { loading } = useSelector((state) => state.auth);
   const [form] = Form.useForm();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测是否为移动端或微信
+  useEffect(() => {
+    const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+    const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(checkMobile || isWeChat);
+  }, []);
 
   const onFinish = async (values) => {
     try {
@@ -35,27 +43,29 @@ const Register = () => {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: isMobile ? 'flex-start' : 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: isMobile ? '20px 20px' : '20px',
+      paddingTop: isMobile ? '20px' : '20px'
     }}>
       <div style={{ width: '100%', maxWidth: 1400 }}>
-        <Row gutter={[48, 24]} align="middle">
+        <Row gutter={[48, isMobile ? 0 : 24]} align="middle">
           <Col xs={24} lg={12} style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '40px',
-            minHeight: '50vh'
+            padding: isMobile ? '10px 20px' : '40px',
+            minHeight: isMobile ? 'auto' : '50vh'
           }}>
             <div style={{ textAlign: 'center', color: '#fff', maxWidth: 600 }}>
-              <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 24 }}>
-                🎵 SocialMusic
+              <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '8px' : '12px' }}>
+                <span>🎵</span>
+                <span>OnBeat合拍</span>
               </Title>
-              <Title level={3} style={{ color: '#fff', fontWeight: 'normal', marginBottom: 16 }}>
+              <Title level={3} style={{ color: '#fff', fontWeight: 'normal', marginBottom: isMobile ? 8 : 16 }}>
                 加入我们，开启音乐之旅
               </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, marginBottom: isMobile ? 0 : 16 }}>
                 发现更多好音乐，结识志同道合的朋友
               </Text>
             </div>
