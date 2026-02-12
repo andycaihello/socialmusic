@@ -1,5 +1,7 @@
 """User management API routes"""
 import os
+import uuid
+from datetime import datetime
 from io import BytesIO
 from PIL import Image
 from flask import Blueprint, request, jsonify, current_app
@@ -185,10 +187,10 @@ def upload_avatar(current_user_id):
         except Exception as e:
             return jsonify({'error': f'Image compression failed: {str(e)}'}), 400
 
-        # Generate secure filename (always save as .jpg after compression)
-        filename = secure_filename(file.filename)
-        name, ext = os.path.splitext(filename)
-        filename = f"avatar_{current_user_id}_{name}.jpg"
+        # Generate unique filename using timestamp and UUID (always save as .jpg after compression)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"avatar_{current_user_id}_{timestamp}_{unique_id}.jpg"
 
         # Save compressed file
         upload_folder = os.path.join(current_app.root_path, '..', current_app.config['UPLOAD_FOLDER'])
@@ -197,6 +199,17 @@ def upload_avatar(current_user_id):
 
         with open(filepath, 'wb') as f:
             f.write(compressed_image.read())
+
+        # Delete old avatar file if exists
+        if user.avatar_url:
+            old_filename = user.avatar_url.split('/')[-1]
+            old_filepath = os.path.join(upload_folder, old_filename)
+            if os.path.exists(old_filepath):
+                try:
+                    os.remove(old_filepath)
+                except Exception as e:
+                    # Log but don't fail if old file can't be deleted
+                    current_app.logger.warning(f"Failed to delete old avatar: {str(e)}")
 
         # Update user avatar URL
         avatar_url = f"/uploads/{filename}"
