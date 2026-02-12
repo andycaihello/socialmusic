@@ -367,11 +367,12 @@ const Messages = () => {
           type="text"
           icon={<ArrowLeftOutlined />}
           onClick={() => {
-            // 移动端：如果有选中的会话（有userId），返回会话列表；否则返回首页
             if (userId) {
+              // 在对话详情页：返回会话列表
               navigate('/messages');
             } else {
-              navigate('/');
+              // 在会话列表页：返回首页
+              navigate('/?tab=' + (sessionStorage.getItem('lastTab') || '1'));
             }
           }}
         />

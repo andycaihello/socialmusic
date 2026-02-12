@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models.music import Song
-from app.models.social import Like, Comment
+from app.models.social import Like, Comment, CommentLike
 from app.utils.decorators import login_required
 from app.services.log_service import LogService
 from sqlalchemy import desc
@@ -267,3 +267,77 @@ def delete_comment(current_user_id, comment_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+
+@bp.route('/comments/<int:comment_id>/like', methods=['POST'])
+@login_required
+def like_comment(current_user_id, comment_id):
+    """Like a comment"""
+    try:
+        comment = db.session.get(Comment, comment_id)
+        if not comment:
+            return jsonify({'error': 'Comment not found'}), 404
+
+        # Check if already liked
+        existing_like = CommentLike.query.filter_by(
+            user_id=current_user_id,
+            comment_id=comment_id
+        ).first()
+
+        if existing_like:
+            return jsonify({'error': 'Comment already liked'}), 400
+
+        # Create like
+        comment_like = CommentLike(
+            user_id=current_user_id,
+            comment_id=comment_id
+        )
+        db.session.add(comment_like)
+
+        # Update comment like count
+        comment.like_count += 1
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Comment liked successfully',
+            'like_count': comment.like_count
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/comments/<int:comment_id>/like', methods=['DELETE'])
+@login_required
+def unlike_comment(current_user_id, comment_id):
+    """Unlike a comment"""
+    try:
+        comment = db.session.get(Comment, comment_id)
+        if not comment:
+            return jsonify({'error': 'Comment not found'}), 404
+
+        # Find the like
+        comment_like = CommentLike.query.filter_by(
+            user_id=current_user_id,
+            comment_id=comment_id
+        ).first()
+
+        if not comment_like:
+            return jsonify({'error': 'Comment not liked yet'}), 400
+
+        # Delete like
+        db.session.delete(comment_like)
+
+        # Update comment like count
+        comment.like_count = max(0, comment.like_count - 1)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Comment unliked successfully',
+            'like_count': comment.like_count
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

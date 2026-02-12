@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tabs, Card, Button, Avatar, Space, Typography, List, Tag, Row, Col, Statistic, Empty, Modal, message as antMessage } from 'antd';
 import { UserOutlined, CustomerServiceOutlined, FireOutlined, StarOutlined, PlayCircleOutlined, HeartOutlined, MessageOutlined, ShareAltOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { musicAPI, feedAPI, socialAPI, messageAPI } from '../api';
@@ -13,7 +13,8 @@ const Home = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('1');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || '1');
   const [trendingSongs, setTrendingSongs] = useState([]);
   const [latestSongs, setLatestSongs] = useState([]);
   const [friendsActivity, setFriendsActivity] = useState([]);
@@ -29,6 +30,21 @@ const Home = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // 监听URL参数变化，更新activeTab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // 当tab改变时，更新URL参数
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setSearchParams({ tab: key });
+    sessionStorage.setItem('lastTab', key);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -557,7 +573,7 @@ const Home = () => {
       <div style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
           <Tabs
             activeKey={activeTab}
-            onChange={setActiveTab}
+            onChange={handleTabChange}
             items={tabItems}
             size="large"
             className="home-tabs"

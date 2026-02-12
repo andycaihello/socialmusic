@@ -131,6 +131,8 @@ export const interactionAPI = {
   addComment: (songId, data) => api.post(`/songs/${songId}/comments`, data),
   getComments: (songId, params) => api.get(`/songs/${songId}/comments`, { params }),
   deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
+  likeComment: (commentId) => api.post(`/comments/${commentId}/like`),
+  unlikeComment: (commentId) => api.delete(`/comments/${commentId}/like`),
 };
 
 // Feed API

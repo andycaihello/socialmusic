@@ -7,7 +7,7 @@ import {
 } from 'antd';
 import {
   ArrowLeftOutlined, PlayCircleOutlined, HeartOutlined, HeartFilled,
-  MessageOutlined, CustomerServiceOutlined, SendOutlined
+  MessageOutlined, CustomerServiceOutlined, SendOutlined, DownOutlined, UpOutlined
 } from '@ant-design/icons';
 import { musicAPI, interactionAPI } from '../api';
 import MusicPlayer from '../components/MusicPlayer';
@@ -32,6 +32,10 @@ const SongDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
+  const [commentLikes, setCommentLikes] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const [replyContents, setReplyContents] = useState({});
+  const [collapsedComments, setCollapsedComments] = useState({});
 
   useEffect(() => {
     fetchSongDetail();
@@ -132,13 +136,78 @@ const SongDetail = () => {
   };
 
   const handleReply = (comment) => {
+    // 切换展开/收起回复框
+    setExpandedReplies(prev => ({
+      ...prev,
+      [comment.id]: !prev[comment.id]
+    }));
     setReplyTo(comment);
-    setCommentContent(`@${comment.user.nickname || comment.user.username} `);
   };
 
   const cancelReply = () => {
     setReplyTo(null);
     setCommentContent('');
+  };
+
+  const handleCommentLike = async (comment) => {
+    if (!isAuthenticated) {
+      message.warning('请先登录');
+      navigate('/login');
+      return;
+    }
+
+    const isLiked = commentLikes[comment.id];
+    try {
+      if (isLiked) {
+        await interactionAPI.unlikeComment(comment.id);
+        setCommentLikes(prev => ({ ...prev, [comment.id]: false }));
+        // 更新评论列表中的点赞数
+        setComments(prev => prev.map(c =>
+          c.id === comment.id ? { ...c, like_count: c.like_count - 1 } : c
+        ));
+      } else {
+        await interactionAPI.likeComment(comment.id);
+        setCommentLikes(prev => ({ ...prev, [comment.id]: true }));
+        setComments(prev => prev.map(c =>
+          c.id === comment.id ? { ...c, like_count: c.like_count + 1 } : c
+        ));
+      }
+    } catch (error) {
+      message.error(error.response?.data?.error || '操作失败');
+    }
+  };
+
+  const handleReplySubmit = async (commentId) => {
+    if (!isAuthenticated) {
+      message.warning('请先登录');
+      navigate('/login');
+      return;
+    }
+
+    const content = replyContents[commentId];
+    if (!content || !content.trim()) {
+      message.warning('请输入回复内容');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await interactionAPI.addComment(id, {
+        content: content,
+        parent_id: commentId
+      });
+
+      message.success('回复成功');
+      setReplyContents(prev => ({ ...prev, [commentId]: '' }));
+      setExpandedReplies(prev => ({ ...prev, [commentId]: false }));
+      setReplyTo(null);
+      fetchComments();
+      fetchSongDetail();
+    } catch (error) {
+      message.error(error.response?.data?.error || '回复失败');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDuration = (seconds) => {
@@ -383,7 +452,8 @@ const SongDetail = () => {
                         <Button
                           type="link"
                           size="small"
-                          icon={<HeartOutlined />}
+                          icon={commentLikes[comment.id] ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
+                          onClick={() => handleCommentLike(comment)}
                           style={{ padding: 0 }}
                         >
                           {comment.like_count > 0 && formatNumber(comment.like_count)}
@@ -396,27 +466,79 @@ const SongDetail = () => {
                         >
                           回复
                         </Button>
+                        {comment.replies && comment.replies.length > 0 && (
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={collapsedComments[comment.id] ? <DownOutlined /> : <UpOutlined />}
+                            onClick={() => setCollapsedComments(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                            style={{ padding: 0 }}
+                          >
+                            {comment.replies.length} 条回复
+                          </Button>
+                        )}
                       </Space>
 
+                      {/* 原地展开的回复输入框 */}
+                      {expandedReplies[comment.id] && (
+                        <div style={{ marginTop: 12 }}>
+                          <TextArea
+                            rows={2}
+                            placeholder={`回复 @${comment.user.nickname || comment.user.username}`}
+                            value={replyContents[comment.id] || ''}
+                            onChange={(e) => setReplyContents(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                            maxLength={500}
+                          />
+                          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setExpandedReplies(prev => ({ ...prev, [comment.id]: false }));
+                                setReplyContents(prev => ({ ...prev, [comment.id]: '' }));
+                              }}
+                            >
+                              取消
+                            </Button>
+                            <Button
+                              type="primary"
+                              size="small"
+                              onClick={() => handleReplySubmit(comment.id)}
+                              loading={submitting}
+                              disabled={!replyContents[comment.id]?.trim()}
+                            >
+                              发送
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* 回复列表 */}
-                      {comment.replies && comment.replies.length > 0 && (
+                      {comment.replies && comment.replies.length > 0 && !collapsedComments[comment.id] && (
                         <div style={{
                           marginTop: 12,
                           paddingLeft: 16,
                           borderLeft: '2px solid #f0f0f0'
                         }}>
                           {comment.replies.map((reply) => (
-                            <div key={reply.id} style={{ marginBottom: 8 }}>
-                              <Space size={4}>
+                            <div key={reply.id} style={{ marginBottom: 12 }}>
+                              <Space size={4} style={{ flexWrap: 'wrap' }}>
                                 <Text strong style={{ fontSize: 13 }}>
                                   {reply.user?.nickname || reply.user?.username}:
                                 </Text>
                                 <Text style={{ fontSize: 13 }}>{reply.content}</Text>
                               </Space>
-                              <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   {formatTime(reply.created_at)}
                                 </Text>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  onClick={() => handleReply(comment)}
+                                  style={{ padding: 0, fontSize: 12, height: 'auto' }}
+                                >
+                                  回复
+                                </Button>
                               </div>
                             </div>
                           ))}

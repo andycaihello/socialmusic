@@ -80,18 +80,35 @@ const MainLayout = ({ children }) => {
           zIndex: 1000,
         }}
       >
-        <Title
-          level={3}
+        <div
           style={{
-            margin: 0,
-            color: '#1890ff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
             cursor: 'pointer',
-            fontSize: 'clamp(14px, 4vw, 20px)', // 响应式字体大小
           }}
           onClick={() => navigate('/')}
         >
-          🎵 SocialMusic
-        </Title>
+          <img
+            src="/socialmusic.png"
+            alt="OnBeat"
+            style={{
+              width: 'clamp(28px, 6vw, 48px)',
+              height: 'clamp(28px, 6vw, 48px)',
+              objectFit: 'contain',
+            }}
+          />
+          <Title
+            level={3}
+            style={{
+              margin: 0,
+              color: '#1890ff',
+              fontSize: 'clamp(14px, 4vw, 20px)',
+            }}
+          >
+            OnBeat
+          </Title>
+        </div>
 
         <Space size="middle">
           {/* Message icon with unread badge */}

@@ -68,6 +68,7 @@ class Comment(db.Model):
     user = db.relationship('User', back_populates='comments')
     song = db.relationship('Song', back_populates='comments')
     parent = db.relationship('Comment', remote_side=[id], backref='replies')
+    comment_likes = db.relationship('CommentLike', back_populates='comment', cascade='all, delete-orphan')
 
     # Indexes
     __table_args__ = (
@@ -89,6 +90,30 @@ class Comment(db.Model):
 
     def __repr__(self):
         return f'<Comment {self.id} by user={self.user_id}>'
+
+
+class CommentLike(db.Model):
+    """Like model for comments"""
+    __tablename__ = 'comment_likes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comments.id', ondelete='CASCADE'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref='comment_likes')
+    comment = db.relationship('Comment', back_populates='comment_likes')
+
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'comment_id', name='unique_comment_like'),
+        db.Index('idx_user_comment_likes', 'user_id'),
+        db.Index('idx_comment_likes', 'comment_id'),
+    )
+
+    def __repr__(self):
+        return f'<CommentLike user={self.user_id} comment={self.comment_id}>'
 
 
 class PlayHistory(db.Model):
