@@ -31,7 +31,7 @@ def create_app(config_name=None):
         return send_from_directory(upload_folder, filename)
 
     # Register blueprints
-    from app.api import auth, user, music, social, interaction, feed, message
+    from app.api import auth, user, music, social, interaction, feed, message, wechat_auth
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(user.bp, url_prefix='/api/users')
     app.register_blueprint(music.bp, url_prefix='/api')
@@ -39,6 +39,7 @@ def create_app(config_name=None):
     app.register_blueprint(interaction.bp, url_prefix='/api')
     app.register_blueprint(feed.bp, url_prefix='/api/feed')
     app.register_blueprint(message.bp, url_prefix='/api')
+    app.register_blueprint(wechat_auth.bp, url_prefix='/api/auth')
 
     # Register socket events
     from app import socket_events

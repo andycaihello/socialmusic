@@ -16,6 +16,9 @@ class User(db.Model):
     avatar_url = db.Column(db.String(255), nullable=True)
     nickname = db.Column(db.String(100), nullable=True)
     bio = db.Column(db.Text, nullable=True)
+    wechat_openid = db.Column(db.String(100), unique=True, nullable=True, index=True)
+    wechat_unionid = db.Column(db.String(100), unique=True, nullable=True, index=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

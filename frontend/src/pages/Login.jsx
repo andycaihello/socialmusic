@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Button, Card, message, Row, Col, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, message, Row, Col, Typography, Divider } from 'antd';
+import { UserOutlined, LockOutlined, WechatOutlined } from '@ant-design/icons';
 import { login, clearError } from '../store/authSlice';
+import { wechatAPI } from '../api/wechat';
 
 const { Title, Text } = Typography;
 
@@ -41,6 +42,23 @@ const Login = () => {
       // 处理各种错误格式
       const errorMessage = err?.message || err?.error || err || '登录失败，请检查用户名和密码';
       message.error(errorMessage);
+    }
+  };
+
+  const handleWechatLogin = async () => {
+    try {
+      // 检测是否在移动端
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const loginType = isMobile ? 'mobile' : 'pc';
+
+      const res = await wechatAPI.getWechatLoginUrl(loginType);
+      const authUrl = res.data.auth_url;
+
+      // 跳转到微信授权页面
+      window.location.href = authUrl;
+    } catch (error) {
+      message.error('获取微信登录链接失败');
+      console.error(error);
     }
   };
 
@@ -134,6 +152,24 @@ const Login = () => {
                     style={{ height: 45 }}
                   >
                     登录
+                  </Button>
+                </Form.Item>
+
+                <Divider plain>或</Divider>
+
+                <Form.Item>
+                  <Button
+                    icon={<WechatOutlined />}
+                    onClick={handleWechatLogin}
+                    block
+                    style={{
+                      height: 45,
+                      background: '#07c160',
+                      color: '#fff',
+                      border: 'none'
+                    }}
+                  >
+                    微信登录
                   </Button>
                 </Form.Item>
 

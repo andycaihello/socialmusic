@@ -13,6 +13,7 @@ import SongDetail from './pages/SongDetail';
 import Profile from './pages/Profile';
 import UserDetail from './pages/UserDetail';
 import Messages from './pages/Messages';
+import WechatCallback from './pages/WechatCallback';
 
 // App content component that uses hooks
 const AppContent = () => {
@@ -43,6 +44,7 @@ const AppContent = () => {
             isAuthenticated ? <Navigate to="/" replace /> : <Register />
           }
         />
+        <Route path="/auth/wechat/callback" element={<WechatCallback />} />
 
         {/* Private routes */}
         <Route
