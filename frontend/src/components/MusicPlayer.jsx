@@ -6,7 +6,8 @@ import {
   StepBackwardOutlined,
   StepForwardOutlined,
   SoundOutlined,
-  CustomerServiceOutlined
+  CustomerServiceOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { interactionAPI } from '../api';
 
@@ -144,6 +145,19 @@ const MusicPlayer = ({ currentSong, playlist, onSongChange, onClose }) => {
     }
   };
 
+  const handleClose = () => {
+    // 停止播放
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    // 调用父组件的关闭回调
+    if (onSongChange) {
+      onSongChange(null);
+    }
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -153,111 +167,270 @@ const MusicPlayer = ({ currentSong, playlist, onSongChange, onClose }) => {
   if (!currentSong) return null;
 
   return (
-    <Card
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        borderRadius: 0,
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.15)',
-      }}
-      bodyStyle={{ padding: '16px 24px' }}
-    >
-      <audio ref={audioRef} />
+    <>
+      <Card
+        className="music-player"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          borderRadius: 0,
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.15)',
+        }}
+        bodyStyle={{ padding: '12px' }}
+      >
+        <audio ref={audioRef} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        {/* 歌曲信息 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 250 }}>
-          {currentSong.cover_url ? (
-            <img
-              src={currentSong.cover_url}
-              alt={currentSong.title}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 4,
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <div style={{
-              width: 56,
-              height: 56,
-              background: '#f0f0f0',
-              borderRadius: 4,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <CustomerServiceOutlined style={{ fontSize: 24, color: '#999' }} />
+        <div className="player-container">
+          {/* 歌曲信息 */}
+          <div className="song-info">
+            {currentSong.cover_url ? (
+              <img
+                src={currentSong.cover_url}
+                alt={currentSong.title}
+                className="song-cover"
+              />
+            ) : (
+              <div className="song-cover-placeholder">
+                <CustomerServiceOutlined style={{ fontSize: 24, color: '#999' }} />
+              </div>
+            )}
+            <div className="song-details">
+              <div className="song-title">
+                {currentSong.title}
+              </div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {currentSong.artist?.name}
+              </Text>
             </div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {currentSong.title}
-            </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {currentSong.artist?.name}
-            </Text>
-          </div>
-        </div>
-
-        {/* 播放控制 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={<StepBackwardOutlined />}
-              onClick={handlePrevious}
-              size="large"
-            />
-            <Button
-              type="primary"
-              shape="circle"
-              icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-              onClick={handlePlayPause}
-              size="large"
-              style={{ width: 48, height: 48 }}
-            />
-            <Button
-              type="text"
-              icon={<StepForwardOutlined />}
-              onClick={handleNext}
-              size="large"
-            />
           </div>
 
-          {/* 进度条 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontSize: 12, minWidth: 40, textAlign: 'right' }}>
-              {formatTime(currentTime)}
-            </Text>
+          {/* 播放控制 */}
+          <div className="player-controls">
+            <div className="control-buttons">
+              <Button
+                type="text"
+                icon={<StepBackwardOutlined />}
+                onClick={handlePrevious}
+                size="large"
+                className="control-btn"
+              />
+              <Button
+                type="primary"
+                shape="circle"
+                icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                onClick={handlePlayPause}
+                size="large"
+                className="play-btn"
+              />
+              <Button
+                type="text"
+                icon={<StepForwardOutlined />}
+                onClick={handleNext}
+                size="large"
+                className="control-btn"
+              />
+            </div>
+
+            {/* 进度条 */}
+            <div className="progress-bar">
+              <Text className="time-text">
+                {formatTime(currentTime)}
+              </Text>
+              <Slider
+                value={currentTime}
+                max={duration}
+                onChange={handleSeek}
+                tooltip={{ formatter: (value) => formatTime(value) }}
+                style={{ flex: 1, margin: 0 }}
+              />
+              <Text className="time-text">
+                {formatTime(duration)}
+              </Text>
+            </div>
+          </div>
+
+          {/* 音量控制 - 移动端隐藏 */}
+          <div className="volume-control">
+            <SoundOutlined />
             <Slider
-              value={currentTime}
-              max={duration}
-              onChange={handleSeek}
-              tooltip={{ formatter: (value) => formatTime(value) }}
+              value={volume}
+              onChange={setVolume}
               style={{ flex: 1, margin: 0 }}
             />
-            <Text style={{ fontSize: 12, minWidth: 40 }}>
-              {formatTime(duration)}
-            </Text>
           </div>
-        </div>
 
-        {/* 音量控制 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 150 }}>
-          <SoundOutlined />
-          <Slider
-            value={volume}
-            onChange={setVolume}
-            style={{ flex: 1, margin: 0 }}
+          {/* 关闭按钮 */}
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={handleClose}
+            className="close-btn"
+            style={{ flexShrink: 0 }}
           />
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      {/* 响应式样式 */}
+      <style>{`
+        /* 移动端样式 */
+        .music-player .player-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .music-player .song-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .music-player .song-cover,
+        .music-player .song-cover-placeholder {
+          width: 48px;
+          height: 48px;
+          border-radius: 4px;
+          flex-shrink: 0;
+        }
+
+        .music-player .song-cover {
+          object-fit: cover;
+        }
+
+        .music-player .song-cover-placeholder {
+          background: #f0f0f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .music-player .song-details {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .music-player .song-title {
+          font-weight: bold;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 14px;
+        }
+
+        .music-player .player-controls {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex-shrink: 0;
+          margin-right: 12px;
+        }
+
+        .music-player .control-buttons {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .music-player .control-btn {
+          display: none;
+        }
+
+        .music-player .play-btn {
+          width: 40px;
+          height: 40px;
+        }
+
+        .music-player .progress-bar {
+          display: none;
+        }
+
+        .music-player .volume-control {
+          display: none;
+        }
+
+        .music-player .close-btn {
+          color: #999;
+          font-size: 16px;
+        }
+
+        .music-player .close-btn:hover {
+          color: #ff4d4f;
+        }
+
+        /* 桌面端样式 */
+        @media (min-width: 769px) {
+          .music-player .ant-card-body {
+            padding: 16px 24px !important;
+          }
+
+          .music-player .player-container {
+            gap: 24px;
+          }
+
+          .music-player .song-info {
+            min-width: 250px;
+            flex: 0 0 auto;
+            gap: 12px;
+          }
+
+          .music-player .song-cover,
+          .music-player .song-cover-placeholder {
+            width: 56px;
+            height: 56px;
+          }
+
+          .music-player .song-title {
+            font-size: 16px;
+          }
+
+          .music-player .player-controls {
+            flex: 1;
+            gap: 8px;
+          }
+
+          .music-player .control-buttons {
+            gap: 16px;
+          }
+
+          .music-player .control-btn {
+            display: inline-block;
+          }
+
+          .music-player .play-btn {
+            width: 48px;
+            height: 48px;
+          }
+
+          .music-player .progress-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .music-player .time-text {
+            font-size: 12px;
+            min-width: 40px;
+          }
+
+          .music-player .time-text:first-child {
+            text-align: right;
+          }
+
+          .music-player .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 150px;
+          }
+        }
+      `}</style>
+    </>
   );
 };
 

@@ -190,18 +190,18 @@ const SongDetail = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
-      <Content style={{ padding: '16px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      <Content className="song-detail-content">
         {/* 返回按钮 */}
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
-          style={{ marginBottom: 16 }}
+          className="back-button"
         >
           返回
         </Button>
 
         {/* 歌曲信息卡片 */}
-        <Card style={{ marginBottom: 16 }}>
+        <Card className="song-detail-card">
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             {/* 响应式布局：移动端垂直排列，桌面端水平排列 */}
             <div className="song-info-container">
@@ -290,7 +290,7 @@ const SongDetail = () => {
         </Card>
 
         {/* 评论区 */}
-        <Card title={`评论 (${song.comment_count})`}>
+        <Card title={`评论 (${song.comment_count})`} className="comments-card">
           {/* 发表评论 */}
           <div style={{ marginBottom: 24 }}>
             {replyTo && (
@@ -442,6 +442,24 @@ const SongDetail = () => {
 
       {/* 响应式样式 */}
       <style>{`
+        /* 移动端：页面铺满，无padding */
+        .song-detail-content {
+          padding: 0;
+          max-width: 1200px;
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        .back-button {
+          margin: 12px;
+        }
+
+        .song-detail-card,
+        .comments-card {
+          margin: 0 0 0 0;
+          border-radius: 0;
+        }
+
         .song-info-container {
           display: flex;
           gap: 24px;
@@ -484,6 +502,26 @@ const SongDetail = () => {
         @media (max-width: 480px) {
           .song-stats {
             grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* 桌面端：恢复padding和圆角 */
+        @media (min-width: 769px) {
+          .song-detail-content {
+            padding: 16px;
+          }
+
+          .back-button {
+            margin: 0 0 16px 0;
+          }
+
+          .song-detail-card {
+            margin-bottom: 16px;
+            border-radius: 8px;
+          }
+
+          .comments-card {
+            border-radius: 8px;
           }
         }
       `}</style>

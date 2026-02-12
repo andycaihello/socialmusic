@@ -360,16 +360,9 @@ const Messages = () => {
   };
 
   return (
-    <div style={{ background: '#f0f2f5' }}>
+    <div className="messages-container">
       {/* 页面标题栏 - 移动端根据是否选中会话显示不同内容 */}
-      <div style={{
-        background: '#fff',
-        padding: '16px',
-        borderBottom: '1px solid #f0f0f0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px'
-      }}>
+      <div className="messages-header">
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}
@@ -686,6 +679,20 @@ const Messages = () => {
 
         {/* 响应式样式 */}
         <style>{`
+          /* 移动端：页面铺满，无padding */
+          .messages-container {
+            background: #f0f2f5;
+          }
+
+          .messages-header {
+            background: #fff;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
           /* 移动端：完全隐藏另一侧 */
           @media (max-width: 575px) {
             /* 当有userId时，完全隐藏会话列表 */
@@ -700,6 +707,10 @@ const Messages = () => {
 
           /* 桌面端：显示分屏布局 */
           @media (min-width: 576px) {
+            .messages-header {
+              padding: 16px;
+            }
+
             .ant-col-sm-8,
             .ant-col-sm-16 {
               display: block !important;

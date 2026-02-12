@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, Card, Button, Avatar, Space, Typography, List, Tag, Row, Col, Statistic, Empty, Modal, message as antMessage } from 'antd';
-import { UserOutlined, CustomerServiceOutlined, FireOutlined, StarOutlined, PlayCircleOutlined, HeartOutlined, MessageOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { UserOutlined, CustomerServiceOutlined, FireOutlined, StarOutlined, PlayCircleOutlined, HeartOutlined, MessageOutlined, ShareAltOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { musicAPI, feedAPI, socialAPI, messageAPI } from '../api';
 import MusicPlayer from '../components/MusicPlayer';
 import { getAvatarUrl } from '../utils/url';
@@ -248,10 +248,10 @@ const Home = () => {
   // Tab2: 歌手热歌
   const ArtistsHotTab = () => {
     const [artists, setArtists] = useState([]);
-    const [selectedArtist, setSelectedArtist] = useState(null);
-    const [artistSongs, setArtistSongs] = useState([]);
+    const [expandedArtistId, setExpandedArtistId] = useState(null);
+    const [artistSongsMap, setArtistSongsMap] = useState({});
     const [loadingArtists, setLoadingArtists] = useState(false);
-    const [loadingSongs, setLoadingSongs] = useState(false);
+    const [loadingSongsId, setLoadingSongsId] = useState(null);
 
     useEffect(() => {
       fetchArtists();
@@ -263,9 +263,6 @@ const Home = () => {
         const res = await musicAPI.getArtists();
         const artistsList = res.data.artists || [];
         setArtists(artistsList);
-        if (artistsList.length > 0) {
-          handleArtistClick(artistsList[0]);
-        }
       } catch (error) {
         console.error('Failed to fetch artists:', error);
       } finally {
@@ -274,22 +271,38 @@ const Home = () => {
     };
 
     const handleArtistClick = async (artist) => {
-      setSelectedArtist(artist);
-      setLoadingSongs(true);
+      // 如果点击的是已展开的歌手，则收起
+      if (expandedArtistId === artist.id) {
+        setExpandedArtistId(null);
+        return;
+      }
+
+      // 展开新的歌手
+      setExpandedArtistId(artist.id);
+
+      // 如果已经加载过该歌手的歌曲，不需要重新加载
+      if (artistSongsMap[artist.id]) {
+        return;
+      }
+
+      // 加载歌手的歌曲
+      setLoadingSongsId(artist.id);
       try {
         const res = await musicAPI.getArtistSongs(artist.id);
-        setArtistSongs(res.data.songs || []);
+        setArtistSongsMap(prev => ({
+          ...prev,
+          [artist.id]: res.data.songs || []
+        }));
       } catch (error) {
         console.error('Failed to fetch artist songs:', error);
       } finally {
-        setLoadingSongs(false);
+        setLoadingSongsId(null);
       }
     };
 
     return (
       <Row gutter={[24, 24]}>
-        {/* 左侧歌手列表 */}
-        <Col xs={24} lg={6}>
+        <Col xs={24}>
           <Card
             title={
               <Space>
@@ -301,69 +314,77 @@ const Home = () => {
           >
             <List
               dataSource={artists}
-              renderItem={(artist) => (
-                <List.Item
-                  style={{
-                    cursor: 'pointer',
-                    background: selectedArtist?.id === artist.id ? '#e6f7ff' : 'transparent',
-                    padding: '12px',
-                    borderRadius: 4,
-                    marginBottom: 8
-                  }}
-                  onClick={() => handleArtistClick(artist)}
-                >
-                  <Space>
-                    <Avatar size={48} icon={<CustomerServiceOutlined />} />
-                    <div>
-                      <div><Text strong>{artist.name}</Text></div>
-                      <div>
-                        <Tag color="blue">{artist.genre}</Tag>
-                        <Text type="secondary" style={{ fontSize: 12 }}>{artist.country}</Text>
+              renderItem={(artist) => {
+                const isExpanded = expandedArtistId === artist.id;
+                const songs = artistSongsMap[artist.id] || [];
+                const isLoadingSongs = loadingSongsId === artist.id;
+
+                return (
+                  <div key={artist.id} style={{ marginBottom: 8 }}>
+                    {/* 歌手信息 */}
+                    <List.Item
+                      style={{
+                        cursor: 'pointer',
+                        background: isExpanded ? '#e6f7ff' : 'transparent',
+                        padding: '12px',
+                        borderRadius: 4,
+                        transition: 'all 0.3s',
+                      }}
+                      onClick={() => handleArtistClick(artist)}
+                    >
+                      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                        <Space>
+                          <Avatar size={48} icon={<CustomerServiceOutlined />} />
+                          <div>
+                            <div><Text strong>{artist.name}</Text></div>
+                            <div>
+                              <Tag color="blue">{artist.genre}</Tag>
+                              <Text type="secondary" style={{ fontSize: 12 }}>{artist.country}</Text>
+                            </div>
+                          </div>
+                        </Space>
+                        {isExpanded ? <UpOutlined /> : <DownOutlined />}
+                      </Space>
+                    </List.Item>
+
+                    {/* 展开的歌曲列表 */}
+                    {isExpanded && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          marginLeft: 16,
+                          padding: '12px',
+                          background: '#fafafa',
+                          borderRadius: 4,
+                          borderLeft: '3px solid #1890ff',
+                        }}
+                      >
+                        {artist.bio && (
+                          <Paragraph type="secondary" style={{ marginBottom: 16, fontSize: 13 }}>
+                            {artist.bio}
+                          </Paragraph>
+                        )}
+                        {isLoadingSongs ? (
+                          <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <Text type="secondary">加载中...</Text>
+                          </div>
+                        ) : songs.length > 0 ? (
+                          <List
+                            dataSource={songs}
+                            renderItem={(song, index) => (
+                              <SongCard song={song} showRank rank={index + 1} />
+                            )}
+                          />
+                        ) : (
+                          <Empty description="暂无歌曲" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        )}
                       </div>
-                    </div>
-                  </Space>
-                </List.Item>
-              )}
+                    )}
+                  </div>
+                );
+              }}
             />
           </Card>
-        </Col>
-
-        {/* 右侧歌手热歌 */}
-        <Col xs={24} lg={18}>
-          {selectedArtist ? (
-            <Card
-              title={
-                <Space>
-                  <Avatar size={48} icon={<CustomerServiceOutlined />} />
-                  <div>
-                    <div><Text strong style={{ fontSize: 18 }}>{selectedArtist.name}</Text></div>
-                    <div>
-                      <Tag color="blue">{selectedArtist.genre}</Tag>
-                      <Text type="secondary">{selectedArtist.country}</Text>
-                    </div>
-                  </div>
-                </Space>
-              }
-              extra={<Text type="secondary">{artistSongs.length} 首热门歌曲</Text>}
-              loading={loadingSongs}
-            >
-              {selectedArtist.bio && (
-                <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                  {selectedArtist.bio}
-                </Paragraph>
-              )}
-              <List
-                dataSource={artistSongs}
-                renderItem={(song, index) => (
-                  <SongCard song={song} showRank rank={index + 1} />
-                )}
-              />
-            </Card>
-          ) : (
-            <Card>
-              <Empty description="请选择一个歌手查看热门歌曲" />
-            </Card>
-          )}
         </Col>
       </Row>
     );
@@ -532,16 +553,16 @@ const Home = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
+    <div className="home-container">
       <div style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
             items={tabItems}
             size="large"
-            style={{ background: '#fff', padding: '0 24px', borderRadius: 8 }}
+            className="home-tabs"
           />
-          <div style={{ marginTop: 24 }}>
+          <div className="home-content">
             {activeTab === '1' && <RecommendedTab />}
             {activeTab === '2' && <ArtistsHotTab />}
             {activeTab === '3' && <FriendsActivityTab />}
@@ -603,6 +624,29 @@ const Home = () => {
 
         {/* 响应式样式 */}
         <style>{`
+          /* 移动端：页面铺满，无padding */
+          .home-container {
+            padding: 0;
+            background: #f0f2f5;
+            minHeight: calc(100vh - 64px);
+          }
+
+          .home-tabs {
+            background: #fff;
+            padding: 0;
+            box-shadow: none;
+          }
+
+          .home-content {
+            margin-top: 0;
+          }
+
+          /* 移动端Card无边距 */
+          .ant-card {
+            border-radius: 0;
+            margin-bottom: 0 !important;
+          }
+
           /* 歌曲卡片布局 */
           .song-card-content {
             display: flex;
@@ -673,6 +717,25 @@ const Home = () => {
 
           /* 桌面端显示完整布局 */
           @media (min-width: 769px) {
+            .home-container {
+              padding: 24px;
+            }
+
+            .home-tabs {
+              padding: 0 24px;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+
+            .home-content {
+              margin-top: 24px;
+            }
+
+            .ant-card {
+              border-radius: 8px;
+              margin-bottom: 16px !important;
+            }
+
             .song-card-content {
               gap: 16px;
             }
