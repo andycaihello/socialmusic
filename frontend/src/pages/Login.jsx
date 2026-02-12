@@ -14,14 +14,28 @@ const Login = () => {
   const [form] = Form.useForm();
 
   const onFinish = async (values) => {
+    console.log('Login form submitted:', values);
+
+    // 防止重复提交
+    if (loading) {
+      console.log('Already loading, preventing duplicate submission');
+      return;
+    }
+
     try {
+      console.log('Dispatching login action...');
       const result = await dispatch(login({
         identifier: values.identifier,
         password: values.password,
       })).unwrap();
 
+      console.log('Login successful:', result);
       message.success('登录成功！');
-      navigate('/');
+
+      // 使用 setTimeout 确保消息显示后再跳转
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (err) {
       console.error('Login error:', err);
       // 处理各种错误格式

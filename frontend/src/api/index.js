@@ -9,11 +9,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30秒超时
+  withCredentials: false, // 微信浏览器兼容性
 });
 
 // Request interceptor - add auth token to requests
 api.interceptors.request.use(
   (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url);
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -21,6 +24,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -28,9 +32,11 @@ api.interceptors.request.use(
 // Response interceptor - handle 401 errors and refresh token
 api.interceptors.response.use(
   (response) => {
+    console.log('API Response:', response.status, response.config.url);
     return response;
   },
   async (error) => {
+    console.error('API Error:', error.response?.status, error.config?.url, error.message);
     const originalRequest = error.config;
 
     // If error is 401 and we haven't tried to refresh yet
@@ -50,7 +56,7 @@ api.interceptors.response.use(
 
         // Try to refresh the token
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh-token`,
+          `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/auth/refresh-token`,
           {},
           {
             headers: {
