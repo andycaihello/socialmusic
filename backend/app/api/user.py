@@ -30,6 +30,14 @@ def compress_image(image_file, max_size_kb=150):
     # Open image
     img = Image.open(image_file)
 
+    # Handle EXIF orientation to fix rotated images
+    try:
+        from PIL import ImageOps
+        img = ImageOps.exif_transpose(img)
+    except Exception:
+        # If EXIF processing fails, continue without rotation
+        pass
+
     # Convert RGBA to RGB if necessary
     if img.mode in ('RGBA', 'LA', 'P'):
         background = Image.new('RGB', img.size, (255, 255, 255))
