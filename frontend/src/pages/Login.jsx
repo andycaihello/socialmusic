@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Button, Card, message, Row, Col, Typography, Divider } from 'antd';
@@ -13,6 +13,13 @@ const Login = () => {
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
   const [form] = Form.useForm();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测是否为移动端
+  useEffect(() => {
+    const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(checkMobile);
+  }, []);
 
   const onFinish = async (values) => {
     console.log('Login form submitted:', values);
@@ -47,11 +54,8 @@ const Login = () => {
 
   const handleWechatLogin = async () => {
     try {
-      // 检测是否在移动端
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const loginType = isMobile ? 'mobile' : 'pc';
-
-      const res = await wechatAPI.getWechatLoginUrl(loginType);
+      // 使用移动应用AppID，仅支持移动端
+      const res = await wechatAPI.getWechatLoginUrl('mobile');
       const authUrl = res.data.auth_url;
 
       // 跳转到微信授权页面
@@ -67,27 +71,28 @@ const Login = () => {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: isMobile ? 'flex-start' : 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: isMobile ? '20px 20px' : '20px',
+      paddingTop: isMobile ? '20px' : '20px'
     }}>
       <div style={{ width: '100%', maxWidth: 1400 }}>
-        <Row gutter={[48, 24]} align="middle">
+        <Row gutter={[48, isMobile ? 8 : 24]} align="middle">
           <Col xs={24} lg={12} style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '40px',
-            minHeight: '50vh'
+            padding: isMobile ? '20px' : '40px',
+            minHeight: isMobile ? 'auto' : '50vh'
           }}>
             <div style={{ textAlign: 'center', color: '#fff', maxWidth: 600 }}>
               <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 24 }}>
-                🎵 SocialMusic
+                🎵 OnBeat合拍
               </Title>
-              <Title level={3} style={{ color: '#fff', fontWeight: 'normal', marginBottom: 16 }}>
+              <Title level={3} style={{ color: '#fff', fontWeight: 'normal', marginBottom: isMobile ? 8 : 16 }}>
                 发现音乐，分享快乐
               </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, marginBottom: isMobile ? 0 : 16 }}>
                 与好友一起探索音乐世界
               </Text>
             </div>
@@ -155,23 +160,27 @@ const Login = () => {
                   </Button>
                 </Form.Item>
 
-                <Divider plain>或</Divider>
+                {isMobile && (
+                  <>
+                    <Divider plain>或</Divider>
 
-                <Form.Item>
-                  <Button
-                    icon={<WechatOutlined />}
-                    onClick={handleWechatLogin}
-                    block
-                    style={{
-                      height: 45,
-                      background: '#07c160',
-                      color: '#fff',
-                      border: 'none'
-                    }}
-                  >
-                    微信登录
-                  </Button>
-                </Form.Item>
+                    <Form.Item>
+                      <Button
+                        icon={<WechatOutlined />}
+                        onClick={handleWechatLogin}
+                        block
+                        style={{
+                          height: 45,
+                          background: '#07c160',
+                          color: '#fff',
+                          border: 'none'
+                        }}
+                      >
+                        微信登录
+                      </Button>
+                    </Form.Item>
+                  </>
+                )}
 
                 <div style={{ textAlign: 'center' }}>
                   <Text type="secondary">还没有账号？</Text>

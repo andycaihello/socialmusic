@@ -25,34 +25,21 @@ WECHAT_USER_INFO_URL = 'https://api.weixin.qq.com/sns/userinfo'
 @bp.route('/wechat/login', methods=['GET'])
 def wechat_login():
     """
-    微信登录入口
-    参数：
-    - type: 'pc' 或 'mobile'，默认为 'pc'
+    微信登录入口（仅支持移动端）
+    注意：使用移动应用AppID，不支持PC扫码
     """
-    login_type = request.args.get('type', 'pc')
     state = hashlib.md5(str(time.time()).encode()).hexdigest()[:16]
-    
-    if login_type == 'mobile':
-        # 移动端登录（在微信内打开）
-        auth_url = (
-            f"{WECHAT_OAUTH_URL}?"
-            f"appid={WECHAT_APP_ID}&"
-            f"redirect_uri={WECHAT_REDIRECT_URI}&"
-            f"response_type=code&"
-            f"scope=snsapi_userinfo&"
-            f"state={state}#wechat_redirect"
-        )
-    else:
-        # PC扫码登录
-        auth_url = (
-            f"{WECHAT_AUTHORIZE_URL}?"
-            f"appid={WECHAT_APP_ID}&"
-            f"redirect_uri={WECHAT_REDIRECT_URI}&"
-            f"response_type=code&"
-            f"scope=snsapi_login&"
-            f"state={state}#wechat_redirect"
-        )
-    
+
+    # 移动端登录（在微信内打开）
+    auth_url = (
+        f"{WECHAT_OAUTH_URL}?"
+        f"appid={WECHAT_APP_ID}&"
+        f"redirect_uri={WECHAT_REDIRECT_URI}&"
+        f"response_type=code&"
+        f"scope=snsapi_userinfo&"
+        f"state={state}#wechat_redirect"
+    )
+
     return jsonify({
         'auth_url': auth_url,
         'state': state
