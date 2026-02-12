@@ -1,5 +1,7 @@
 """User management API routes"""
 import os
+from io import BytesIO
+from PIL import Image
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from marshmallow import ValidationError
@@ -16,6 +18,46 @@ def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+
+def compress_image(image_file, max_size_kb=150):
+    """
+    Compress image to ensure it's under max_size_kb
+    Returns compressed image as BytesIO object
+    """
+    # Open image
+    img = Image.open(image_file)
+
+    # Convert RGBA to RGB if necessary
+    if img.mode in ('RGBA', 'LA', 'P'):
+        background = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+        img = background
+
+    # Resize if image is too large (max 800x800)
+    max_dimension = 800
+    if img.width > max_dimension or img.height > max_dimension:
+        img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+    # Compress with quality adjustment
+    output = BytesIO()
+    quality = 95
+
+    while quality > 20:
+        output.seek(0)
+        output.truncate()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        size_kb = output.tell() / 1024
+
+        if size_kb <= max_size_kb:
+            break
+
+        quality -= 5
+
+    output.seek(0)
+    return output
 
 
 @bp.route('/me', methods=['GET'])
@@ -137,17 +179,24 @@ def upload_avatar(current_user_id):
         if not allowed_file(file.filename):
             return jsonify({'error': 'File type not allowed. Only png, jpg, jpeg, gif are allowed'}), 400
 
-        # Generate secure filename
-        filename = secure_filename(file.filename)
-        # Add user ID to filename to avoid conflicts
-        name, ext = os.path.splitext(filename)
-        filename = f"avatar_{current_user_id}_{name}{ext}"
+        # Compress image
+        try:
+            compressed_image = compress_image(file, max_size_kb=150)
+        except Exception as e:
+            return jsonify({'error': f'Image compression failed: {str(e)}'}), 400
 
-        # Save file
+        # Generate secure filename (always save as .jpg after compression)
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        filename = f"avatar_{current_user_id}_{name}.jpg"
+
+        # Save compressed file
         upload_folder = os.path.join(current_app.root_path, '..', current_app.config['UPLOAD_FOLDER'])
         os.makedirs(upload_folder, exist_ok=True)
         filepath = os.path.join(upload_folder, filename)
-        file.save(filepath)
+
+        with open(filepath, 'wb') as f:
+            f.write(compressed_image.read())
 
         # Update user avatar URL
         avatar_url = f"/uploads/{filename}"

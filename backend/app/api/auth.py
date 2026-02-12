@@ -2,6 +2,7 @@
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.extensions import db
@@ -71,14 +72,19 @@ def login():
         schema = LoginSchema()
         data = schema.load(request.json)
 
-        # Find user by email or username
+        # Find user by email or username (case-insensitive for username)
         identifier = data['identifier']
         user = User.query.filter(
-            (User.email == identifier) | (User.username == identifier)
+            (User.email == identifier) | (func.lower(User.username) == func.lower(identifier))
         ).first()
 
-        if not user or not user.check_password(data['password']):
-            return jsonify({'error': 'Invalid credentials'}), 401
+        # Check if user exists
+        if not user:
+            return jsonify({'error': '用户不存在，请先注册'}), 404
+
+        # Check password
+        if not user.check_password(data['password']):
+            return jsonify({'error': '密码错误'}), 401
 
         # Generate tokens
         tokens = generate_tokens(user.id)
