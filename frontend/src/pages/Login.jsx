@@ -15,10 +15,11 @@ const Login = () => {
   const [form] = Form.useForm();
   const [isMobile, setIsMobile] = useState(false);
 
-  // 检测是否为移动端
+  // 检测是否为移动端或微信
   useEffect(() => {
+    const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
     const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    setIsMobile(checkMobile);
+    setIsMobile(checkMobile || isWeChat);
   }, []);
 
   const onFinish = async (values) => {
@@ -77,12 +78,12 @@ const Login = () => {
       paddingTop: isMobile ? '20px' : '20px'
     }}>
       <div style={{ width: '100%', maxWidth: 1400 }}>
-        <Row gutter={[48, isMobile ? 8 : 24]} align="middle">
+        <Row gutter={[48, isMobile ? 0 : 24]} align="middle">
           <Col xs={24} lg={12} style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isMobile ? '20px' : '40px',
+            padding: isMobile ? '10px 20px' : '40px',
             minHeight: isMobile ? 'auto' : '50vh'
           }}>
             <div style={{ textAlign: 'center', color: '#fff', maxWidth: 600 }}>
