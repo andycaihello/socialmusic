@@ -1,6 +1,6 @@
 """Message API endpoints"""
 import json
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_, and_, func
 from app.extensions import db, socketio
@@ -31,16 +31,17 @@ def send_message():
     if receiver_id == current_user_id:
         return jsonify({'error': '不能给自己发送消息'}), 400
 
-    # Check if users are mutually following each other
-    mutual_follow = db.session.query(Follow).filter(
-        or_(
-            and_(Follow.follower_id == current_user_id, Follow.following_id == receiver_id),
-            and_(Follow.follower_id == receiver_id, Follow.following_id == current_user_id)
-        )
-    ).count()
+    # Check if users are mutually following each other (only if enabled in config)
+    if current_app.config.get('REQUIRE_MUTUAL_FOLLOW_FOR_MESSAGE', False):
+        mutual_follow = db.session.query(Follow).filter(
+            or_(
+                and_(Follow.follower_id == current_user_id, Follow.following_id == receiver_id),
+                and_(Follow.follower_id == receiver_id, Follow.following_id == current_user_id)
+            )
+        ).count()
 
-    if mutual_follow < 2:
-        return jsonify({'error': '只能给互相关注的好友发送私信'}), 403
+        if mutual_follow < 2:
+            return jsonify({'error': '只能给互相关注的好友发送私信'}), 403
 
     # Create message
     message = Message(
