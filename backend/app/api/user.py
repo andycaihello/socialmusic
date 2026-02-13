@@ -7,6 +7,7 @@ from PIL import Image
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from marshmallow import ValidationError
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.user import User
@@ -265,6 +266,47 @@ def get_user_profile(user_id):
             pass
 
         return jsonify({'user': user_data}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/search', methods=['GET'])
+def search_users():
+    """Search users by username, nickname or bio"""
+    try:
+        query = request.args.get('q', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+
+        if not query or len(query.strip()) < 1:
+            return jsonify({
+                'users': [],
+                'total': 0
+            }), 200
+
+        # Search users by username, nickname or bio
+        user_query = User.query.filter(
+            or_(
+                User.username.ilike(f'%{query}%'),
+                User.nickname.ilike(f'%{query}%'),
+                User.bio.ilike(f'%{query}%')
+            )
+        )
+
+        pagination = user_query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        users_data = [user.to_dict() for user in pagination.items]
+
+        return jsonify({
+            'users': users_data,
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page,
+            'pages': pagination.pages
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
