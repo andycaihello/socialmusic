@@ -29,6 +29,10 @@ class Config:
     # CORS
     CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:5173']
 
+    # Message Configuration
+    # 是否要求互相关注才能发私信（默认不限制）
+    REQUIRE_MUTUAL_FOLLOW_FOR_MESSAGE = os.getenv('REQUIRE_MUTUAL_FOLLOW_FOR_MESSAGE', 'false').lower() == 'true'
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
