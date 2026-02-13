@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import UserDetail from './pages/UserDetail';
 import Messages from './pages/Messages';
 import WechatCallback from './pages/WechatCallback';
+import SearchResults from './pages/SearchResults';
 
 // App content component that uses hooks
 const AppContent = () => {
@@ -103,6 +104,16 @@ const AppContent = () => {
             <PrivateRoute>
               <MainLayout>
                 <Messages />
+              </MainLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <PrivateRoute>
+              <MainLayout>
+                <SearchResults />
               </MainLayout>
             </PrivateRoute>
           }

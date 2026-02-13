@@ -1,11 +1,11 @@
 /**
  * Main Layout component with header
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Button, Avatar, Space, Typography, Badge } from 'antd';
-import { UserOutlined, LogoutOutlined, MessageOutlined } from '@ant-design/icons';
+import { Layout, Button, Avatar, Space, Typography, Badge, Input } from 'antd';
+import { UserOutlined, LogoutOutlined, MessageOutlined, SearchOutlined } from '@ant-design/icons';
 import { logout } from '../store/authSlice';
 import { fetchUnreadCount } from '../store/messageSlice';
 import { getAvatarUrl } from '../utils/url';
@@ -13,6 +13,7 @@ import io from 'socket.io-client';
 
 const { Header } = Layout;
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 const MainLayout = ({ children }) => {
   const { user } = useSelector((state) => state.auth);
@@ -20,6 +21,44 @@ const MainLayout = ({ children }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const socketRef = useRef(null);
+  const [searchValue, setSearchValue] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const searchOverlayRef = useRef(null);
+
+  useEffect(() => {
+    // 使用屏幕宽度检测是否为移动端
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    // 初始检测
+    checkMobile();
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 点击外部关闭移动端搜索框
+    const handleClickOutside = (event) => {
+      if (searchOverlayRef.current && !searchOverlayRef.current.contains(event.target)) {
+        setShowMobileSearch(false);
+      }
+    };
+
+    if (showMobileSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMobileSearch]);
 
   useEffect(() => {
     // Fetch unread count initially
@@ -64,6 +103,18 @@ const MainLayout = ({ children }) => {
     navigate('/login');
   };
 
+  const handleSearch = (value) => {
+    if (value && value.trim() !== '') {
+      navigate(`/search?q=${encodeURIComponent(value.trim())}`);
+    }
+  };
+
+  const onSearch = (value, event) => {
+    if (event?.key === 'Enter' || !event) {
+      handleSearch(value);
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       {/* 顶部导航栏 - 固定在所有页面 */}
@@ -86,6 +137,7 @@ const MainLayout = ({ children }) => {
             alignItems: 'center',
             gap: '8px',
             cursor: 'pointer',
+            flexShrink: 0,
           }}
           onClick={() => navigate('/')}
         >
@@ -110,7 +162,32 @@ const MainLayout = ({ children }) => {
           </Title>
         </div>
 
+        {/* 搜索框 - 仅在桌面端显示 */}
+        {!isMobile && (
+          <div style={{ flex: 1, maxWidth: 500, margin: '0 24px' }}>
+            <Search
+              placeholder="搜索歌曲、歌手或用户"
+              allowClear
+              enterButton={<SearchOutlined />}
+              size="middle"
+              onSearch={handleSearch}
+              onChange={(e) => setSearchValue(e.target.value)}
+              value={searchValue}
+            />
+          </div>
+        )}
+
         <Space size="middle">
+          {/* 移动端搜索图标 */}
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<SearchOutlined />}
+              onClick={() => setShowMobileSearch(true)}
+              style={{ fontSize: 20 }}
+            />
+          )}
+
           {/* Message icon with unread badge */}
           <Badge count={unreadCount} overflowCount={99}>
             <Button
@@ -156,6 +233,51 @@ const MainLayout = ({ children }) => {
           </Button>
         </Space>
       </Header>
+
+      {/* 移动端悬浮搜索框 */}
+      {isMobile && showMobileSearch && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'flex-start',
+            paddingTop: 80,
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            ref={searchOverlayRef}
+            style={{
+              width: '90%',
+              maxWidth: 500,
+              background: '#fff',
+              borderRadius: 8,
+              padding: 16,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            <Search
+              placeholder="搜索歌曲、歌手或用户"
+              allowClear
+              enterButton="搜索"
+              size="large"
+              onSearch={(value) => {
+                handleSearch(value);
+                setShowMobileSearch(false);
+              }}
+              onChange={(e) => setSearchValue(e.target.value)}
+              value={searchValue}
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
 
       {/* 添加响应式样式 */}
       <style>{`

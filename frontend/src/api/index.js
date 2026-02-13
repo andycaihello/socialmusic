@@ -106,6 +106,7 @@ export const userAPI = {
   }),
   getFollowers: (userId) => api.get(`/users/${userId}/followers`),
   getFollowing: (userId) => api.get(`/users/${userId}/following`),
+  searchUsers: (query) => api.get('/users/search', { params: { q: query } }),
 };
 
 // Social API
@@ -126,6 +127,7 @@ export const musicAPI = {
   getArtists: () => api.get('/artists'),
   getArtist: (artistId) => api.get(`/artists/${artistId}`),
   getArtistSongs: (artistId) => api.get(`/artists/${artistId}/songs`),
+  search: (query, type = 'all') => api.get('/search', { params: { q: query, type } }),
 };
 
 // Interaction API
